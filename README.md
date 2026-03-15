@@ -182,7 +182,6 @@ case class Task(
   priority: Priority
 )
 
-given JsonSchema[Priority] = DeriveJsonSchema.derived
 given JsonSchema[Task] = DeriveJsonSchema.derived
 
 val schema = JsonSchema[Task].schema
