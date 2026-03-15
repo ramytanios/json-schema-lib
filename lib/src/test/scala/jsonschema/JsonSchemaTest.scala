@@ -5,49 +5,43 @@ import munit.FunSuite
 
 class JsonSchemaTest extends FunSuite:
 
-  test("String schema generates correct JSON") {
+  test("String schema generates correct JSON"):
     val schema = JsonSchema[String].schema
     val json = schema.toJson
     val expected = parse("""{"type": "string"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Int schema generates correct JSON") {
+  test("Int schema generates correct JSON"):
     val schema = JsonSchema[Int].schema
     val json = schema.toJson
     val expected = parse("""{"type": "integer"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Double schema generates correct JSON") {
+  test("Double schema generates correct JSON"):
     val schema = JsonSchema[Double].schema
     val json = schema.toJson
     val expected = parse("""{"type": "number"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Long schema generates correct JSON") {
+  test("Long schema generates correct JSON"):
     val schema = JsonSchema[Long].schema
     val json = schema.toJson
     val expected = parse("""{"type": "integer"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Float schema generates correct JSON") {
+  test("Float schema generates correct JSON"):
     val schema = JsonSchema[Float].schema
     val json = schema.toJson
     val expected = parse("""{"type": "number"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Boolean schema generates correct JSON") {
+  test("Boolean schema generates correct JSON"):
     val schema = JsonSchema[Boolean].schema
     val json = schema.toJson
     val expected = parse("""{"type": "boolean"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("String schema with constraints") {
+  test("String schema with constraints"):
     val schema = Schema.StringSchema(
       minLength = Some(5),
       maxLength = Some(50),
@@ -61,9 +55,8 @@ class JsonSchemaTest extends FunSuite:
       "pattern": "^[a-z]+$"
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Integer schema with constraints") {
+  test("Integer schema with constraints"):
     val schema = Schema.IntegerSchema(
       minimum = Some(0),
       maximum = Some(100)
@@ -75,9 +68,8 @@ class JsonSchemaTest extends FunSuite:
       "maximum": 100
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Number schema with constraints") {
+  test("Number schema with constraints"):
     val schema = Schema.NumberSchema(
       minimum = Some(0.0),
       maximum = Some(1.0)
@@ -89,9 +81,8 @@ class JsonSchemaTest extends FunSuite:
       "maximum": 1.0
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Object schema with properties") {
+  test("Object schema with properties"):
     val schema = Schema.ObjectSchema(
       properties = Map(
         "name" -> Schema.StringSchema(),
@@ -109,9 +100,8 @@ class JsonSchemaTest extends FunSuite:
       "required": ["name", "age"]
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }
 
-  test("Enum schema with values") {
+  test("Enum schema with values"):
     val schema = Schema.EnumSchema(
       values = List("red", "green", "blue")
     )
@@ -121,4 +111,3 @@ class JsonSchemaTest extends FunSuite:
       "enum": ["red", "green", "blue"]
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
-  }

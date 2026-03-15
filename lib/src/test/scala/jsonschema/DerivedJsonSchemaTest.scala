@@ -6,7 +6,7 @@ import munit.FunSuite
 
 class DerivedJsonSchemaTest extends FunSuite:
 
-  test("Derive schema for simple case class") {
+  test("Derive schema for simple case class"):
     case class Person(name: String, age: Int)
 
     object Person:
@@ -25,9 +25,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema for case class with all primitive types") {
+  test("Derive schema for case class with all primitive types"):
     case class AllPrimitives(
         str: String,
         int: Int,
@@ -57,9 +56,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with string constraints") {
+  test("Derive schema with string constraints"):
     case class Username(@MinLength(3) @MaxLength(20) username: String)
 
     object Username:
@@ -81,9 +79,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with pattern constraint") {
+  test("Derive schema with pattern constraint"):
     case class Email(@Pattern("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") email: String)
 
     object Email:
@@ -104,9 +101,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with integer constraints") {
+  test("Derive schema with integer constraints"):
     case class Age(@MinimumInt(0) @MaximumInt(150) age: Int)
 
     object Age:
@@ -128,9 +124,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with double constraints") {
+  test("Derive schema with double constraints"):
     case class Temperature(@Minimum(-273.15) @Maximum(1000.0) temp: Double)
 
     object Temperature:
@@ -152,9 +147,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with multiple constraints on different fields") {
+  test("Derive schema with multiple constraints on different fields"):
     case class User(
         @MinLength(3) @MaxLength(50) name: String,
         @MinimumInt(18) @MaximumInt(120) age: Int,
@@ -189,9 +183,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with exclusive minimum and maximum") {
+  test("Derive schema with exclusive minimum and maximum"):
     case class Score(
         @ExclusiveMinimumInt(0) @ExclusiveMaximumInt(100) score: Int
     )
@@ -215,9 +208,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with all Option fields - no required fields") {
+  test("Derive schema with all Option fields - no required fields"):
     case class OptionalUser(
         name: Option[String],
         age: Option[Int],
@@ -240,9 +232,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with mixed required and optional fields") {
+  test("Derive schema with mixed required and optional fields"):
     case class MixedUser(
         id: Int,
         name: String,
@@ -268,9 +259,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema with Option fields and constraints") {
+  test("Derive schema with Option fields and constraints"):
     case class OptionalWithConstraints(
         @MinLength(3) @MaxLength(50) name: Option[String],
         @MinimumInt(0) @MaximumInt(150) age: Option[Int]
@@ -299,9 +289,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema for simple enum") {
+  test("Derive schema for simple enum"):
     enum Color:
       case Red, Green, Blue
 
@@ -317,9 +306,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema for enum with multiple values") {
+  test("Derive schema for enum with multiple values"):
     enum Status:
       case Pending, Approved, Rejected, InProgress
 
@@ -335,9 +323,8 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }
 
-  test("Derive schema for case class containing enum field") {
+  test("Derive schema for case class containing enum field"):
     enum Priority:
       case Low, Medium, High
 
@@ -361,4 +348,3 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
-  }

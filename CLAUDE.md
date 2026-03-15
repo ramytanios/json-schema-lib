@@ -150,6 +150,81 @@ The project enforces strict formatting and linting:
 - OrganizeImports rule enabled with unused import removal
 - Targets Scala 3 dialect
 
+## Scala 3 Syntax Conventions
+
+This project uses **modern Scala 3 syntax** throughout. Follow these conventions:
+
+### Optional Braces
+
+**ALWAYS** use Scala 3 optional braces syntax (no `{}` where possible):
+
+✅ **Correct - Use `:` for function bodies:**
+```scala
+def schema: Schema =
+  val base = JsonObject("type" -> Json.fromString("string"))
+  Json.fromJsonObject(base)
+
+trait JsonSchema[A]:
+  def schema: Schema
+```
+
+❌ **Incorrect - Don't use braces:**
+```scala
+def schema: Schema = {
+  val base = JsonObject("type" -> Json.fromString("string"))
+  Json.fromJsonObject(base)
+}
+
+trait JsonSchema[A] {
+  def schema: Schema
+}
+```
+
+✅ **Correct - Use `:` for test bodies:**
+```scala
+test("String schema generates correct JSON"):
+  val schema = JsonSchema[String].schema
+  val json = schema.toJson
+  assertEquals(json, expected)
+```
+
+❌ **Incorrect - Don't use braces in test bodies:**
+```scala
+test("String schema generates correct JSON") {
+  val schema = JsonSchema[String].schema
+  val json = schema.toJson
+  assertEquals(json, expected)
+}
+```
+
+✅ **Correct - Use `:` for object/class definitions:**
+```scala
+object JsonSchema:
+  def apply[A](using js: JsonSchema[A]): JsonSchema[A] = js
+```
+
+❌ **Incorrect:**
+```scala
+object JsonSchema {
+  def apply[A](using js: JsonSchema[A]): JsonSchema[A] = js
+}
+```
+
+### Type Ascription
+
+Use `:` for type ascription (already standard in Scala 3):
+```scala
+def instance[A](s: Schema): JsonSchema[A] = new JsonSchema[A]:
+  def schema: Schema = s
+```
+
+### When Braces Are Acceptable
+
+Braces are still used for:
+- Multi-line JSON strings and other string literals
+- Map/collection literals: `Map("key" -> value)`
+- Match expressions with pattern matching (though cases themselves don't need braces)
+
 ## Commit Message Convention
 
 All commit messages should start with a lowercase letter (e.g., "add feature" not "Add feature").
