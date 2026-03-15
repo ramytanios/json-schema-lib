@@ -89,6 +89,15 @@ The project is a multi-module sbt build:
 
 All source code lives in `lib/src/main/scala/` and tests in `lib/src/test/scala/`.
 
+### Directory Organization
+
+**IMPORTANT**: Keep the directory structure flat and linear. Do not create nested subdirectories within `lib/src/main/scala/jsonschema/`.
+
+- ✅ All Scala files should be directly in `lib/src/main/scala/jsonschema/`
+- ❌ Do not create nested directories like `jsonschema/derivation/`, `jsonschema/core/`, etc.
+
+This project prefers a flat structure for simplicity and ease of navigation.
+
 ## Build Commands
 
 ### Compilation
@@ -150,14 +159,3 @@ Examples:
 - ✅ `fix constraint extraction in macros`
 - ❌ `Add support for Option types`
 - ❌ `Fix constraint extraction in macros`
-
-## SBT Configuration
-
-The project uses several SBT plugins:
-
-- `sbt-tpolecat`: Sensible scalac options
-- `sbt-scalafmt`: Code formatting
-- `sbt-scalafix`: Linting and refactoring
-- `sbt-updates`: Dependency update checking
-
-The build is configured with `semanticdbEnabled := true` for IDE support and code analysis tools.

@@ -20,9 +20,15 @@ object DeriveJsonSchema:
     val tpe = TypeRepr.of[A]
     val typeSymbol = tpe.typeSymbol
 
+    // Check if it's an enum (sealed type with case objects)
+    if typeSymbol.flags.is(Flags.Enum) || (typeSymbol.flags.is(Flags.Sealed) && isEnumLike(
+        typeSymbol
+      ))
+    then return deriveEnumSchema[A](typeSymbol)
+
     // Check if it's a case class
     if !typeSymbol.flags.is(Flags.Case) then
-      report.errorAndAbort(s"${typeSymbol.name} is not a case class")
+      report.errorAndAbort(s"${typeSymbol.name} is not a case class or enum")
 
     // Get the primary constructor
     val constructor = typeSymbol.primaryConstructor
@@ -92,6 +98,17 @@ object DeriveJsonSchema:
     val exclusiveMaximumInt = extractIntAnnotation[ExclusiveMaximumInt](annotations)
     val exclusiveMinimum = extractDoubleAnnotation[ExclusiveMinimum](annotations)
     val exclusiveMaximum = extractDoubleAnnotation[ExclusiveMaximum](annotations)
+
+    // Check if the actual type is an enum
+    val actualTypeSymbol = actualType.typeSymbol
+    if actualTypeSymbol.flags.is(Flags.Enum) || (actualTypeSymbol.flags.is(
+        Flags.Sealed
+      ) && isEnumLike(actualTypeSymbol))
+    then
+      val enumValues = actualTypeSymbol.children.map(_.name)
+      val valuesExpr = Expr.ofList(enumValues.map(Expr(_)))
+      val schema = '{ Schema.EnumSchema(values = $valuesExpr) }
+      return (schema, isRequired)
 
     actualType.asType match
       case '[String] =>
@@ -188,4 +205,35 @@ object DeriveJsonSchema:
       case Apply(Select(New(tpt), _), List(Literal(constant)))
           if tpt.tpe <:< TypeRepr.of[A] =>
         constant.value.asInstanceOf[String]
+    }
+
+  private def isEnumLike(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
+    import quotes.reflect.*
+
+    if !symbol.flags.is(Flags.Sealed) then return false
+
+    // Get all children of the sealed type
+    val children = symbol.children
+    if children.isEmpty then return false
+
+    // Check if all children are modules (case objects)
+    children.forall(child => child.flags.is(Flags.Module) && child.flags.is(Flags.Case))
+
+  private def deriveEnumSchema[A: Type](using
+      Quotes
+  )(symbol: quotes.reflect.Symbol): Expr[JsonSchema[A]] =
+    import quotes.reflect.*
+
+    // Get all enum values (case objects)
+    val enumValues = symbol.children.map(_.name)
+
+    if enumValues.isEmpty then
+      report.errorAndAbort(s"${symbol.name} has no enum values")
+
+    val valuesExpr = Expr.ofList(enumValues.map(Expr(_)))
+
+    '{
+      JsonSchema.instance[A](
+        Schema.EnumSchema(values = $valuesExpr)
+      )
     }

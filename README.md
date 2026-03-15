@@ -11,16 +11,21 @@ This project is purely experimental and was created for me to experiment with [C
 - **Compile-time schema generation** - Zero runtime overhead with macro-based derivation
 - **Type-safe constraints** - Use annotations to specify validation rules
 - **Primitive type support** - String, Int, Long, Float, Double, Boolean
+- **Enum support** - Scala 3 enums automatically map to JSON Schema enums
 - **Option support** - Optional fields automatically excluded from required list
 - **Circe integration** - Built-in JSON encoding for schemas
 
-## Supported Primitive Types
+## Supported Types
 
+### Primitive Types
 - `String` - Maps to JSON Schema `"type": "string"`
 - `Int` / `Long` - Maps to JSON Schema `"type": "integer"`
 - `Double` / `Float` - Maps to JSON Schema `"type": "number"`
 - `Boolean` - Maps to JSON Schema `"type": "boolean"`
 - `Option[T]` - Makes field optional (excluded from `required` list)
+
+### Complex Types
+- `enum` - Scala 3 enums map to JSON Schema with `"type": "string"` and `"enum": [...]` constraint
 
 ## Constraint Annotations
 
@@ -145,6 +150,57 @@ case class AllTypes(
   bool: Boolean
 )
 given JsonSchema[AllTypes] = DeriveJsonSchema.derived
+```
+
+### With Enums
+
+```scala
+enum Status:
+  case Pending, Approved, Rejected
+
+given JsonSchema[Status] = DeriveJsonSchema.derived
+
+val schema = JsonSchema[Status].schema
+```
+
+**Generated JSON Schema:**
+```json
+{
+  "type": "string",
+  "enum": ["Pending", "Approved", "Rejected"]
+}
+```
+
+### Case Class with Enum Field
+
+```scala
+enum Priority:
+  case Low, Medium, High
+
+case class Task(
+  name: String,
+  priority: Priority
+)
+
+given JsonSchema[Priority] = DeriveJsonSchema.derived
+given JsonSchema[Task] = DeriveJsonSchema.derived
+
+val schema = JsonSchema[Task].schema
+```
+
+**Generated JSON Schema:**
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "priority": {
+      "type": "string",
+      "enum": ["Low", "Medium", "High"]
+    }
+  },
+  "required": ["name", "priority"]
+}
 ```
 
 ## Development

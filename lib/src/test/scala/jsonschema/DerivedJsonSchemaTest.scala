@@ -278,3 +278,63 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
   }
+
+  test("Derive schema for simple enum") {
+    enum Color:
+      case Red, Green, Blue
+
+    given JsonSchema[Color] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Color].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "string",
+      "enum": ["Red", "Green", "Blue"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+  }
+
+  test("Derive schema for enum with multiple values") {
+    enum Status:
+      case Pending, Approved, Rejected, InProgress
+
+    given JsonSchema[Status] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Status].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "string",
+      "enum": ["Pending", "Approved", "Rejected", "InProgress"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+  }
+
+  test("Derive schema for case class containing enum field") {
+    enum Priority:
+      case Low, Medium, High
+
+    case class Task(name: String, priority: Priority)
+    given JsonSchema[Priority] = DeriveJsonSchema.derived
+    given JsonSchema[Task] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Task].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "priority": {
+          "type": "string",
+          "enum": ["Low", "Medium", "High"]
+        }
+      },
+      "required": ["name", "priority"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+  }

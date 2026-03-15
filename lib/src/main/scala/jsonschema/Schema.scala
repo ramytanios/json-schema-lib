@@ -80,6 +80,18 @@ object Schema:
       Json.fromJsonObject(JsonObject("type" -> Json.fromString("boolean")))
 
   /**
+   * An enum type schema
+   */
+  case class EnumSchema(values: List[String]) extends Schema:
+    def toJson: Json =
+      Json.fromJsonObject(
+        JsonObject(
+          "type" -> Json.fromString("string"),
+          "enum" -> Json.fromValues(values.map(Json.fromString))
+        )
+      )
+
+  /**
    * An object type schema
    */
   case class ObjectSchema(
