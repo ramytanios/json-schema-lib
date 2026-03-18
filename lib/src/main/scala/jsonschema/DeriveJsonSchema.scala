@@ -58,8 +58,7 @@ object DeriveJsonSchema:
     // Build the required fields list
     val requiredExprs = fieldSchemas
       .collect:
-        case (nameExpr, _, Expr(true)) =>
-          nameExpr
+        case (nameExpr, _, Expr(true)) => nameExpr
 
     val requiredListExpr = Expr.ofList(requiredExprs)
 
