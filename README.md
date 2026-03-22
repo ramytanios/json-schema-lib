@@ -12,6 +12,7 @@ This project is purely experimental and was created for me to experiment with [C
 - **Type-safe constraints** - Use annotations to specify validation rules
 - **Primitive type support** - String, Int, Long, Float, Double, Boolean
 - **Enum support** - Scala 3 enums automatically map to JSON Schema enums
+- **Seq support** - Mutable and immutable sequences 
 - **Option support** - Optional fields automatically excluded from required list
 - **Circe integration** - Built-in JSON encoding for schemas
 
@@ -45,6 +46,12 @@ This project is purely experimental and was created for me to experiment with [C
 - `@Maximum(n)` - Maximum numeric value
 - `@ExclusiveMinimum(n)` - Exclusive minimum
 - `@ExclusiveMaximum(n)` - Exclusive maximum
+
+### Sequence Constraints (Seq, List, Vector, Buffer, ArrayBuffer, etc ...)
+- @MinItems(n) - Minimum number of items 
+- @MaxItems(n) - Maximum number of items 
+- @UniqueItems(unique) - Unique items
+
 
 ## Usage Examples
 

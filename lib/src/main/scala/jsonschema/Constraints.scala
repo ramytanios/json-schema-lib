@@ -60,3 +60,18 @@ case class ExclusiveMinimumInt(value: Int) extends StaticAnnotation
  * Exclusive maximum value for integers
  */
 case class ExclusiveMaximumInt(value: Int) extends StaticAnnotation
+
+/**
+ * Minimum items for arrays
+ */
+case class MinItems(value: Int) extends StaticAnnotation
+
+/**
+ * Maximum items for arrays
+ */
+case class MaxItems(value: Int) extends StaticAnnotation
+
+/**
+ * Unique items for arrays
+ */
+case class UniqueItems(value: Boolean) extends StaticAnnotation

@@ -1,5 +1,7 @@
 package jsonschema
 
+import scala.collection.mutable.*
+
 /**
  * Type class for generating JSON schemas at compile time
  */
@@ -49,6 +51,43 @@ object JsonSchema:
    * Given instance for Boolean
    */
   given JsonSchema[Boolean] = instance(Schema.BooleanSchema())
+
+  /**
+   * Given instance for List
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[List[A]] = instance(Schema.ArraySchema(js.schema))
+
+  /**
+   *  Given instrance for Seq
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[Seq[A]] = instance(Schema.ArraySchema(js.schema))
+
+  /**
+   * Given instance for Vector
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[Vector[A]] = instance(Schema.ArraySchema(js.schema))
+
+  /**
+   * Given instance for Set
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[Set[A]] = instance(Schema.ArraySchema(js.schema))
+
+  /**
+   * Given instance for Buffer
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[Buffer[A]] = instance(Schema.ArraySchema(js.schema))
+
+  /**
+   * Given instance or ListBuffer
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[ListBuffer[A]] =
+    instance(Schema.ArraySchema(js.schema))
+
+  /**
+   * Given instance for ArrayBuffer
+   */
+  given [A](using js: JsonSchema[A]): JsonSchema[ArrayBuffer[A]] =
+    instance(Schema.ArraySchema(js.schema))
 
   /**
    * Extension method to generate schema
