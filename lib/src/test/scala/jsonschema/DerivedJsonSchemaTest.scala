@@ -4,6 +4,8 @@ import io.circe.parser.*
 import jsonschema.derivation.DeriveJsonSchema
 import munit.FunSuite
 
+import scala.collection.mutable.Buffer
+
 class DerivedJsonSchemaTest extends FunSuite:
 
   test("Derive schema for simple case class"):
@@ -348,3 +350,32 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
+
+    test("Derive schema for case class containing sequences"):
+
+      enum Color:
+        case Red, Green, Blue
+
+      case class Car(drivers: Buffer[String], color: Color)
+      object Car:
+        given JsonSchema[Car] = DeriveJsonSchema.derived
+
+      val schema = JsonSchema[Car].schema
+      val json = schema.toJson
+
+      val expected = parse("""{
+        "type": "object",
+        "properties": {
+          "drivers": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "color": {
+            "type": "string",
+            "enum": ["Red", "Green", "Blue"]
+          }
+        },
+        "required": ["drivers", "color"]
+      }""").getOrElse(io.circe.Json.Null)
+
+      assertEquals(json, expected)

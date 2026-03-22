@@ -92,6 +92,28 @@ object Schema:
       )
 
   /**
+   * An array type schema
+   */
+  case class ArraySchema(
+      items: Schema,
+      minItems: Option[Int] = None,
+      maxItems: Option[Int] = None,
+      uniqueItems: Option[Boolean] = None
+  ) extends Schema:
+    def toJson: Json =
+      val base = JsonObject(
+        "type" -> Json.fromString("array"),
+        "items" -> items.toJson
+      )
+      val withMinItems = minItems.fold(base)(min => base.add("minItems", Json.fromInt(min)))
+      val withMaxItems =
+        maxItems.fold(withMinItems)(max => withMinItems.add("maxItems", Json.fromInt(max)))
+      val withUniqueItems = uniqueItems.fold(withMaxItems)(unique =>
+        withMaxItems.add("uniqueItems", Json.fromBoolean(unique))
+      )
+      Json.fromJsonObject(withUniqueItems)
+
+  /**
    * An object type schema
    */
   case class ObjectSchema(

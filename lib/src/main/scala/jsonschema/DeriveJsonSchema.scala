@@ -11,9 +11,14 @@ object DeriveJsonSchema:
 
   /**
    * Derive a JsonSchema for a product type (case class)
+   * This function will be called by the macro and will generate the appropriate schema
+   * based on the case class's fields and their annotations.
    */
   inline def derived[A]: JsonSchema[A] = ${ derivedImpl[A] }
 
+  /**
+   * Implementation of the macro that generates a JsonSchema instance for a given type A.
+   */
   private def derivedImpl[A: Type](using Quotes): Expr[JsonSchema[A]] =
     import quotes.reflect.*
 
@@ -30,9 +35,8 @@ object DeriveJsonSchema:
     if !typeSymbol.flags.is(Flags.Case) then
       report.errorAndAbort(s"${typeSymbol.name} is not a case class or enum")
 
-    // Get the primary constructor
-    val constructor = typeSymbol.primaryConstructor
-    val params = constructor.paramSymss.flatten.filter(_.isValDef)
+    // Get the params of the constructor
+    val params = typeSymbol.primaryConstructor.paramSymss.flatten.filter(_.isValDef)
 
     if params.isEmpty then
       report.errorAndAbort(s"${typeSymbol.name} has no parameters")
@@ -43,22 +47,20 @@ object DeriveJsonSchema:
       val fieldType = tpe.memberType(param)
       val annotations = param.annotations
 
-      // Extract constraints from annotations
+      // Extract schema and constraints from annotations for each field of the case class
       val (schemaExpr, isRequired) = generateFieldSchema(fieldType, annotations, fieldName)
 
       (Expr(fieldName), schemaExpr, Expr(isRequired))
 
     // Build the properties map
     val propertiesExprs = fieldSchemas.map:
-      case (nameExpr, schemaExpr, _) =>
-        '{ ($nameExpr, $schemaExpr) }
+      case (nameExpr, schemaExpr, _) => '{ ($nameExpr, $schemaExpr) }
 
     val propertiesMapExpr = Expr.ofList(propertiesExprs)
 
     // Build the required fields list
-    val requiredExprs = fieldSchemas
-      .collect:
-        case (nameExpr, _, Expr(true)) => nameExpr
+    val requiredExprs = fieldSchemas.collect:
+      case (nameExpr, _, Expr(true)) => nameExpr
 
     val requiredListExpr = Expr.ofList(requiredExprs)
 
@@ -71,19 +73,23 @@ object DeriveJsonSchema:
       )
     }
 
+  /**
+   * Generate a field schema based on the field type and its annotations.
+   */
   private def generateFieldSchema(using
       Quotes
-  )(fieldType: quotes.reflect.TypeRepr, annotations: List[quotes.reflect.Term], fieldName: String)
-      : (Expr[Schema], Boolean) =
+  )(
+      fieldType: quotes.reflect.TypeRepr,
+      annotations: List[quotes.reflect.Term],
+      fieldName: String
+  ): (Expr[Schema], Boolean) =
     import quotes.reflect.*
 
     // Check if the field type is Option[T]
     val (actualType, isRequired) = fieldType match
       case AppliedType(tycon, List(innerType))
-          if tycon.typeSymbol == TypeRepr.of[Option[?]].typeSymbol =>
-        (innerType, false) // Option types are not required
-      case _ =>
-        (fieldType, true) // Non-Option types are required
+          if tycon.typeSymbol == TypeRepr.of[Option[?]].typeSymbol => (innerType, false)
+      case _ => (fieldType, true)
 
     // Extract constraint values from annotations
     val minLength = extractIntAnnotation[MinLength](annotations)
@@ -97,6 +103,9 @@ object DeriveJsonSchema:
     val exclusiveMaximumInt = extractIntAnnotation[ExclusiveMaximumInt](annotations)
     val exclusiveMinimum = extractDoubleAnnotation[ExclusiveMinimum](annotations)
     val exclusiveMaximum = extractDoubleAnnotation[ExclusiveMaximum](annotations)
+    val minItems = extractIntAnnotation[MinItems](annotations)
+    val maxItems = extractIntAnnotation[MaxItems](annotations)
+    val uniqueItems = extractBooleanAnnotation[UniqueItems](annotations)
 
     // Check if the actual type is an enum
     val actualTypeSymbol = actualType.typeSymbol
@@ -109,69 +118,99 @@ object DeriveJsonSchema:
       val schema = '{ Schema.EnumSchema(values = $valuesExpr) }
       return (schema, isRequired)
 
-    actualType.asType match
-      case '[String] =>
+    // Check if actual type is a subtype of Seq
+    actualType match
+      case AppliedType(_, List(elementType))
+          if actualType <:< TypeRepr.of[scala.collection.Seq[?]] =>
+        val (elementSchemaExpr, _) = generateFieldSchema(elementType, Nil, s"$fieldName.items")
         val schema = '{
-          Schema.StringSchema(
-            minLength = ${ Expr(minLength) },
-            maxLength = ${ Expr(maxLength) },
-            pattern = ${ Expr(pattern) }
+          Schema.ArraySchema(
+            items = $elementSchemaExpr,
+            minItems = ${ Expr(minItems) },
+            maxItems = ${ Expr(maxItems) },
+            uniqueItems = ${ Expr(uniqueItems) }
           )
         }
-        (schema, isRequired)
-
-      case '[Int] =>
-        val schema = '{
-          Schema.IntegerSchema(
-            minimum = ${ Expr(minimumInt) },
-            maximum = ${ Expr(maximumInt) },
-            exclusiveMinimum = ${ Expr(exclusiveMinimumInt) },
-            exclusiveMaximum = ${ Expr(exclusiveMaximumInt) }
-          )
-        }
-        (schema, isRequired)
-
-      case '[Long] =>
-        val schema = '{
-          Schema.IntegerSchema(
-            minimum = ${ Expr(minimumInt) },
-            maximum = ${ Expr(maximumInt) },
-            exclusiveMinimum = ${ Expr(exclusiveMinimumInt) },
-            exclusiveMaximum = ${ Expr(exclusiveMaximumInt) }
-          )
-        }
-        (schema, isRequired)
-
-      case '[Double] =>
-        val schema = '{
-          Schema.NumberSchema(
-            minimum = ${ Expr(minimum) },
-            maximum = ${ Expr(maximum) },
-            exclusiveMinimum = ${ Expr(exclusiveMinimum) },
-            exclusiveMaximum = ${ Expr(exclusiveMaximum) }
-          )
-        }
-        (schema, isRequired)
-
-      case '[Float] =>
-        val schema = '{
-          Schema.NumberSchema(
-            minimum = ${ Expr(minimum) },
-            maximum = ${ Expr(maximum) },
-            exclusiveMinimum = ${ Expr(exclusiveMinimum) },
-            exclusiveMaximum = ${ Expr(exclusiveMaximum) }
-          )
-        }
-        (schema, isRequired)
-
-      case '[Boolean] =>
-        val schema = '{ Schema.BooleanSchema() }
-        (schema, isRequired)
-
+        return (schema, isRequired)
       case _ =>
-        report.errorAndAbort(
-          s"Unsupported field type: ${fieldType.show} for field $fieldName"
-        )
+        actualType.asType match
+          case '[String] =>
+            val schema = '{
+              Schema.StringSchema(
+                minLength = ${ Expr(minLength) },
+                maxLength = ${ Expr(maxLength) },
+                pattern = ${ Expr(pattern) }
+              )
+            }
+            (schema, isRequired)
+
+          case '[Int] =>
+            val schema = '{
+              Schema.IntegerSchema(
+                minimum = ${ Expr(minimumInt) },
+                maximum = ${ Expr(maximumInt) },
+                exclusiveMinimum = ${ Expr(exclusiveMinimumInt) },
+                exclusiveMaximum = ${ Expr(exclusiveMaximumInt) }
+              )
+            }
+            (schema, isRequired)
+
+          case '[Long] =>
+            val schema = '{
+              Schema.IntegerSchema(
+                minimum = ${ Expr(minimumInt) },
+                maximum = ${ Expr(maximumInt) },
+                exclusiveMinimum = ${ Expr(exclusiveMinimumInt) },
+                exclusiveMaximum = ${ Expr(exclusiveMaximumInt) }
+              )
+            }
+            (schema, isRequired)
+
+          case '[Double] =>
+            val schema = '{
+              Schema.NumberSchema(
+                minimum = ${ Expr(minimum) },
+                maximum = ${ Expr(maximum) },
+                exclusiveMinimum = ${ Expr(exclusiveMinimum) },
+                exclusiveMaximum = ${ Expr(exclusiveMaximum) }
+              )
+            }
+            (schema, isRequired)
+
+          case '[Float] =>
+            val schema = '{
+              Schema.NumberSchema(
+                minimum = ${ Expr(minimum) },
+                maximum = ${ Expr(maximum) },
+                exclusiveMinimum = ${ Expr(exclusiveMinimum) },
+                exclusiveMaximum = ${ Expr(exclusiveMaximum) }
+              )
+            }
+            (schema, isRequired)
+
+          case '[Boolean] =>
+            val schema = '{ Schema.BooleanSchema() }
+            (schema, isRequired)
+
+          case '[Set[t]] =>
+            Expr.summon[JsonSchema[t]] match
+              case Some(elemJs) =>
+                val schema = '{
+                  Schema.ArraySchema(
+                    items = $elemJs.schema,
+                    minItems = ${ Expr(minItems) },
+                    maxItems = ${ Expr(maxItems) },
+                    uniqueItems = ${ Expr(uniqueItems) }
+                  )
+                }
+                schema -> isRequired
+              case None =>
+                report.errorAndAbort(s"No JsonSchema instance for element type $fieldName")
+
+          case _ =>
+            report.errorAndAbort(
+              s"Unsupported field type: ${fieldType.show} for field $fieldName"
+            )
 
   private def extractIntAnnotation[A: Type](using
       Quotes
@@ -204,6 +243,17 @@ object DeriveJsonSchema:
       case Apply(Select(New(tpt), _), List(Literal(constant)))
           if tpt.tpe <:< TypeRepr.of[A] =>
         constant.value.asInstanceOf[String]
+    }
+
+  private def extractBooleanAnnotation[A: Type](using
+      Quotes
+  )(annotations: List[quotes.reflect.Term]): Option[Boolean] =
+    import quotes.reflect.*
+
+    annotations.collectFirst {
+      case Apply(Select(New(tpt), _), List(Literal(constant)))
+          if tpt.tpe <:< TypeRepr.of[A] =>
+        constant.value.asInstanceOf[Boolean]
     }
 
   private def isEnumLike(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =

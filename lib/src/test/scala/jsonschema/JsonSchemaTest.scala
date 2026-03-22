@@ -111,3 +111,28 @@ class JsonSchemaTest extends FunSuite:
       "enum": ["red", "green", "blue"]
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
+
+  test("Array schema with items"):
+    val schema = Schema.ArraySchema(
+      items = Schema.StringSchema()
+    )
+    val json = schema.toJson
+    val expected = parse("""{
+      "type": "array",
+      "items": {"type": "string"}
+    }""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("Array schema with enum items"):
+    val schema = Schema.ArraySchema(
+      items = Schema.EnumSchema(List("red", "green", "blue"))
+    )
+    val json = schema.toJson
+    val expected = parse("""{
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["red", "green", "blue"]
+      }
+    }""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
