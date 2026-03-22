@@ -8,7 +8,6 @@ This is a Scala 3 library for compile-time generation of JSON schemas from case 
 
 - Scala 3.7.3
 - Circe for JSON handling (v0.14.15)
-- Cats for functional programming (v2.13.0)
 - MUnit for testing (v1.2.1)
 
 ## Mandatory Workflow
