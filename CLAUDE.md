@@ -124,6 +124,10 @@ The project enforces strict formatting and linting:
 
 Use modern Scala 3 optional braces syntax throughout — `:` instead of `{}` for traits, classes, objects, defs, and tests. Scalafmt enforces this automatically via `newSyntax` rewrite rules. Braces are still used for map/collection literals and match expressions.
 
+### No Early Returns
+
+Avoid `return` statements. Structure code as expressions using `if/else` or `match`, storing intermediate results in `val`s and letting the final expression be the implicit return value.
+
 ## Commit Message Convention
 
 All commit messages should start with a lowercase letter (e.g., "add feature" not "Add feature").
