@@ -379,6 +379,35 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for case class containing sequences of objects"):
+
+    enum Color:
+      case Red, Green, Blue
+
+    case class Car(name: String, availableColors: List[Color])
+    object Car:
+      given JsonSchema[Car] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Car].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "availableColors": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["Red", "Green", "Blue"]
+            }
+          }
+        },
+        "required": ["name", "availableColors"]
+      }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema for case class containing sets"):
 
     enum Color:
