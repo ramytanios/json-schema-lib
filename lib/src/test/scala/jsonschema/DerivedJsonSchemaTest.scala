@@ -350,19 +350,19 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
-    test("Derive schema for case class containing sequences"):
+  test("Derive schema for case class containing sequences"):
 
-      enum Color:
-        case Red, Green, Blue
+    enum Color:
+      case Red, Green, Blue
 
-      case class Car(drivers: Buffer[String], color: Color)
-      object Car:
-        given JsonSchema[Car] = DeriveJsonSchema.derived
+    case class Car(drivers: Buffer[String], color: Color)
+    object Car:
+      given JsonSchema[Car] = DeriveJsonSchema.derived
 
-      val schema = JsonSchema[Car].schema
-      val json = schema.toJson
+    val schema = JsonSchema[Car].schema
+    val json = schema.toJson
 
-      val expected = parse("""{
+    val expected = parse("""{
         "type": "object",
         "properties": {
           "drivers": {
@@ -377,4 +377,34 @@ class DerivedJsonSchemaTest extends FunSuite:
         "required": ["drivers", "color"]
       }""").getOrElse(io.circe.Json.Null)
 
-      assertEquals(json, expected)
+    assertEquals(json, expected)
+
+  test("Derive schema for case class containing sets"):
+
+    enum Color:
+      case Red, Green, Blue
+
+    case class Car(drivers: Set[String], color: Color)
+    object Car:
+      given JsonSchema[Car] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Car].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+        "type": "object",
+        "properties": {
+          "drivers": {
+            "type": "array",
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "color": {
+            "type": "string",
+            "enum": ["Red", "Green", "Blue"]
+          }
+        },
+        "required": ["drivers", "color"]
+      }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)

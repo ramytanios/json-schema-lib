@@ -199,7 +199,7 @@ object DeriveJsonSchema:
                       items = $elemJs.schema,
                       minItems = ${ Expr(minItems) },
                       maxItems = ${ Expr(maxItems) },
-                      uniqueItems = ${ Expr(uniqueItems) }
+                      uniqueItems = Some(true)
                     )
                   }
                   schema -> isRequired
