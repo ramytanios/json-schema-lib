@@ -6,6 +6,8 @@ ThisBuild / scalaVersion       := scala3
 ThisBuild / crossScalaVersions := Seq(scala3)
 ThisBuild / semanticdbEnabled  := true
 
+ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+
 ThisBuild / organization     := "io.github.ramytanios"
 ThisBuild / organizationName := "ramytanios"
 ThisBuild / homepage         := Some(url("https://github.com/ramytanios/json-schema-lib"))
