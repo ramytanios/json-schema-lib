@@ -223,11 +223,10 @@ object DeriveJsonSchema:
   )(annotations: List[quotes.reflect.Term]): Option[Int] =
     import quotes.reflect.*
 
-    annotations.collectFirst {
+    annotations.collectFirst:
       case Apply(Select(New(tpt), _), List(Literal(constant)))
           if tpt.tpe <:< TypeRepr.of[A] =>
         constant.value.asInstanceOf[Int]
-    }
 
   private def extractDoubleAnnotation[A: Type](using
       Quotes
@@ -256,11 +255,10 @@ object DeriveJsonSchema:
   )(annotations: List[quotes.reflect.Term]): Option[Boolean] =
     import quotes.reflect.*
 
-    annotations.collectFirst {
+    annotations.collectFirst:
       case Apply(Select(New(tpt), _), List(Literal(constant)))
           if tpt.tpe <:< TypeRepr.of[A] =>
         constant.value.asInstanceOf[Boolean]
-    }
 
   private def isEnumLike(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
     import quotes.reflect.*
