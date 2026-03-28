@@ -6,6 +6,15 @@ A Scala 3 library that leverages type classes and macros to derive JSON schemas 
 
 This project is purely experimental and was created for me to experiment with [Claude Code](https://claude.com/claude-code) and explore vibe-based coding workflows. It's a learning exercise and playground for testing AI-assisted development patterns. Use at your own risk!
 
+## Installation
+
+Add to your `build.sbt`:
+
+```scala
+libraryDependencies += "io.github.ramytanios" %% "json-schema-lib" % "<version>"
+```
+
+
 ## Features
 
 - **Compile-time schema generation** - Zero runtime overhead with macro-based derivation
