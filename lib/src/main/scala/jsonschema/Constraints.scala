@@ -7,6 +7,16 @@ import scala.annotation.StaticAnnotation
  */
 
 /**
+ * Title of a field
+ */
+case class Title(value: String) extends StaticAnnotation
+
+/**
+ * Descrption of a field
+ */
+case class Description(value: String) extends StaticAnnotation
+
+/**
  * Minimum length for strings
  */
 case class MinLength(value: Int) extends StaticAnnotation

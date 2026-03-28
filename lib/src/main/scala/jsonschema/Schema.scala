@@ -11,6 +11,34 @@ sealed trait Schema:
   def toJson: Json
 
 object Schema:
+
+  extension (sch: Schema)
+    /**
+     * Add a title to the schema.
+     * This will create a new schema with the title added to the JSON representation.
+     */
+    def withTitle(title: Option[String]): Schema =
+      new Schema:
+        def toJson: Json =
+          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
+          Json.fromJsonObject(
+            title.fold(base)(title => base.add("title", Json.fromString(title)))
+          )
+
+    /**
+     * Add a description to the schema.
+     * This will create a new schema with the description added to the JSON representation.
+     */
+    def withDescription(description: Option[String]): Schema =
+      new Schema:
+        def toJson: Json =
+          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
+          Json.fromJsonObject(
+            description.fold(base)(description =>
+              base.add("description", Json.fromString(description))
+            )
+          )
+
   /**
    * A string type schema
    */

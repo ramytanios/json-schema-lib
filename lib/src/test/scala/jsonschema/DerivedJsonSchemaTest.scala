@@ -437,3 +437,38 @@ class DerivedJsonSchemaTest extends FunSuite:
       }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
+
+  test("Derive schema with title and description"):
+    @Title("Product") @Description("A product in the catalog")
+    @Description("This case class represents a product with a name and price")
+    case class Product(
+        @Title("Product Name") @Description("The name of the product") name: String,
+        @Title("Product Price") @Description("The price of the product") price: Double
+    )
+
+    object Product:
+      given JsonSchema[Product] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Product].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "title": "Product",
+      "description": "This case class represents a product with a name and price",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Product Name",
+          "description": "The name of the product"
+        },
+        "price": {
+          "type": "number",
+          "title": "Product Price",
+          "description": "The price of the product"
+        }
+      },
+      "required": ["name", "price"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
