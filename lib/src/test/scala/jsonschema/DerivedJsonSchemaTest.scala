@@ -438,6 +438,186 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for nested case class with explicit derives"):
+    case class Address(street: String, city: String)
+    object Address:
+      given JsonSchema[Address] = DeriveJsonSchema.derived
+
+    case class Person(name: String, address: Address)
+    object Person:
+      given JsonSchema[Person] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Person].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {"type": "string"},
+            "city": {"type": "string"}
+          },
+          "required": ["street", "city"]
+        }
+      },
+      "required": ["name", "address"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for nested case class without explicit derives"):
+    @annotation.nowarn("msg=unused local definition")
+    case class Coords(lat: Double, lon: Double)
+    case class Location(name: String, coords: Coords)
+    object Location:
+      given JsonSchema[Location] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Location].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "coords": {
+          "type": "object",
+          "properties": {
+            "lat": {"type": "number"},
+            "lon": {"type": "number"}
+          },
+          "required": ["lat", "lon"]
+        }
+      },
+      "required": ["name", "coords"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for Option of nested case class"):
+    @annotation.nowarn("msg=unused local definition")
+    case class Meta(key: String, value: String)
+    case class Item(id: Int, meta: Option[Meta])
+    object Item:
+      given JsonSchema[Item] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Item].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer"},
+        "meta": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string"},
+            "value": {"type": "string"}
+          },
+          "required": ["key", "value"]
+        }
+      },
+      "required": ["id"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for List of nested case class"):
+    @annotation.nowarn("msg=unused local definition")
+    case class Tag(name: String)
+    case class Post(title: String, tags: List[Tag])
+    object Post:
+      given JsonSchema[Post] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Post].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "title": {"type": "string"},
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"}
+            },
+            "required": ["name"]
+          }
+        }
+      },
+      "required": ["title", "tags"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for three levels of nesting"):
+    @annotation.nowarn("msg=unused local definition")
+    case class City(name: String)
+    @annotation.nowarn("msg=unused local definition")
+    case class Address(street: String, city: City)
+    case class Person(name: String, address: Address)
+    object Person:
+      given JsonSchema[Person] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Person].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": {"type": "string"},
+            "city": {
+              "type": "object",
+              "properties": {
+                "name": {"type": "string"}
+              },
+              "required": ["name"]
+            }
+          },
+          "required": ["street", "city"]
+        }
+      },
+      "required": ["name", "address"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for nested case class field with title and description"):
+    @annotation.nowarn("msg=unused local definition")
+    case class Inner(value: Int)
+    case class Outer(@Title("Inner field") @Description("The inner object") inner: Inner)
+    object Outer:
+      given JsonSchema[Outer] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Outer].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "inner": {
+          "type": "object",
+          "title": "Inner field",
+          "description": "The inner object",
+          "properties": {
+            "value": {"type": "integer"}
+          },
+          "required": ["value"]
+        }
+      },
+      "required": ["inner"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema with title and description"):
     @Title("Product") @Description("A product in the catalog")
     @Description("This case class represents a product with a name and price")
