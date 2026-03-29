@@ -170,6 +170,12 @@ object DeriveJsonSchema:
         case '[Boolean] =>
           '{ Schema.BooleanSchema() }
 
+        case '[java.time.LocalDate] =>
+          '{ Schema.StringSchema(format = Some("date")) }
+
+        case '[java.time.Instant] =>
+          '{ Schema.StringSchema(format = Some("date-time")) }
+
         case '[scala.collection.Seq[t]] =>
           val (elementSchemaExpr, _) =
             generateFieldSchema(TypeRepr.of[t], Nil, s"$fieldName.items")

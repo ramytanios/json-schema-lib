@@ -618,6 +618,87 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for LocalDate field"):
+    case class Event(name: String, date: java.time.LocalDate)
+    object Event:
+      given JsonSchema[Event] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Event].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "date": {"type": "string", "format": "date"}
+      },
+      "required": ["name", "date"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for Instant field"):
+    case class LogEntry(message: String, timestamp: java.time.Instant)
+    object LogEntry:
+      given JsonSchema[LogEntry] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[LogEntry].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "message": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"}
+      },
+      "required": ["message", "timestamp"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class with both LocalDate and Instant"):
+    case class Record(
+        id: Int,
+        createdAt: java.time.Instant,
+        date: java.time.LocalDate
+    )
+    object Record:
+      given JsonSchema[Record] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Record].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "id": {"type": "integer"},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "date": {"type": "string", "format": "date"}
+      },
+      "required": ["id", "createdAt", "date"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for Option[LocalDate]"):
+    case class Task(name: String, dueDate: Option[java.time.LocalDate])
+    object Task:
+      given JsonSchema[Task] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Task].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "dueDate": {"type": "string", "format": "date"}
+      },
+      "required": ["name"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema with title and description"):
     @Title("Product") @Description("A product in the catalog")
     @Description("This case class represents a product with a name and price")

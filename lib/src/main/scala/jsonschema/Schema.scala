@@ -45,7 +45,8 @@ object Schema:
   case class StringSchema(
       minLength: Option[Int] = None,
       maxLength: Option[Int] = None,
-      pattern: Option[String] = None
+      pattern: Option[String] = None,
+      format: Option[String] = None
   ) extends Schema:
     def toJson: Json =
       val base = JsonObject("type" -> Json.fromString("string"))
@@ -54,7 +55,8 @@ object Schema:
         maxLength.fold(withMinLength)(max => withMinLength.add("maxLength", Json.fromInt(max)))
       val withPattern =
         pattern.fold(withMaxLength)(p => withMaxLength.add("pattern", Json.fromString(p)))
-      Json.fromJsonObject(withPattern)
+      val withFormat = format.fold(withPattern)(f => withPattern.add("format", Json.fromString(f)))
+      Json.fromJsonObject(withFormat)
 
   /**
    * An integer type schema
