@@ -25,8 +25,8 @@ object DeriveJsonSchema:
     val annotations = typeSymbol.annotations
 
     // Extract title and description from annotations for the case class itself
-    val title = extractStringAnnotation[Title](annotations)
-    val description = extractStringAnnotation[Description](annotations)
+    val title = extractAnnotation[Title, String](annotations)
+    val description = extractAnnotation[Description, String](annotations)
 
     // Check if it's an enum (sealed type with case objects)
     if typeSymbol.flags.is(Flags.Enum) || (typeSymbol.flags.is(Flags.Sealed) && isEnumLike(
@@ -97,24 +97,24 @@ object DeriveJsonSchema:
       case _ => (fieldType, true)
 
     // Extract title and description
-    val title = extractStringAnnotation[Title](annotations)
-    val description = extractStringAnnotation[Description](annotations)
+    val title = extractAnnotation[Title, String](annotations)
+    val description = extractAnnotation[Description, String](annotations)
 
     // Extract constraint values from annotations
-    val minLength = extractIntAnnotation[MinLength](annotations)
-    val maxLength = extractIntAnnotation[MaxLength](annotations)
-    val pattern = extractStringAnnotation[Pattern](annotations)
-    val minimumInt = extractIntAnnotation[MinimumInt](annotations)
-    val maximumInt = extractIntAnnotation[MaximumInt](annotations)
-    val minimum = extractDoubleAnnotation[Minimum](annotations)
-    val maximum = extractDoubleAnnotation[Maximum](annotations)
-    val exclusiveMinimumInt = extractIntAnnotation[ExclusiveMinimumInt](annotations)
-    val exclusiveMaximumInt = extractIntAnnotation[ExclusiveMaximumInt](annotations)
-    val exclusiveMinimum = extractDoubleAnnotation[ExclusiveMinimum](annotations)
-    val exclusiveMaximum = extractDoubleAnnotation[ExclusiveMaximum](annotations)
-    val minItems = extractIntAnnotation[MinItems](annotations)
-    val maxItems = extractIntAnnotation[MaxItems](annotations)
-    val uniqueItems = extractBooleanAnnotation[UniqueItems](annotations)
+    val minLength = extractAnnotation[MinLength, Int](annotations)
+    val maxLength = extractAnnotation[MaxLength, Int](annotations)
+    val pattern = extractAnnotation[Pattern, String](annotations)
+    val minimumInt = extractAnnotation[MinimumInt, Int](annotations)
+    val maximumInt = extractAnnotation[MaximumInt, Int](annotations)
+    val minimum = extractAnnotation[Minimum, Double](annotations)
+    val maximum = extractAnnotation[Maximum, Double](annotations)
+    val exclusiveMinimumInt = extractAnnotation[ExclusiveMinimumInt, Int](annotations)
+    val exclusiveMaximumInt = extractAnnotation[ExclusiveMaximumInt, Int](annotations)
+    val exclusiveMinimum = extractAnnotation[ExclusiveMinimum, Double](annotations)
+    val exclusiveMaximum = extractAnnotation[ExclusiveMaximum, Double](annotations)
+    val minItems = extractAnnotation[MinItems, Int](annotations)
+    val maxItems = extractAnnotation[MaxItems, Int](annotations)
+    val uniqueItems = extractAnnotation[UniqueItems, Boolean](annotations)
 
     // Check if the actual type is an enum
     val actualTypeSymbol = actualType.typeSymbol
@@ -218,47 +218,15 @@ object DeriveJsonSchema:
       isRequired
     )
 
-  private def extractIntAnnotation[A: Type](using
+  private def extractAnnotation[A: Type, R](using
       Quotes
-  )(annotations: List[quotes.reflect.Term]): Option[Int] =
+  )(annotations: List[quotes.reflect.Term]): Option[R] =
     import quotes.reflect.*
 
     annotations.collectFirst:
       case Apply(Select(New(tpt), _), List(Literal(constant)))
           if tpt.tpe <:< TypeRepr.of[A] =>
-        constant.value.asInstanceOf[Int]
-
-  private def extractDoubleAnnotation[A: Type](using
-      Quotes
-  )(annotations: List[quotes.reflect.Term]): Option[Double] =
-    import quotes.reflect.*
-
-    annotations.collectFirst {
-      case Apply(Select(New(tpt), _), List(Literal(constant)))
-          if tpt.tpe <:< TypeRepr.of[A] =>
-        constant.value.asInstanceOf[Double]
-    }
-
-  private def extractStringAnnotation[A: Type](using
-      Quotes
-  )(annotations: List[quotes.reflect.Term]): Option[String] =
-    import quotes.reflect.*
-
-    annotations.collectFirst {
-      case Apply(Select(New(tpt), _), List(Literal(constant)))
-          if tpt.tpe <:< TypeRepr.of[A] =>
-        constant.value.asInstanceOf[String]
-    }
-
-  private def extractBooleanAnnotation[A: Type](using
-      Quotes
-  )(annotations: List[quotes.reflect.Term]): Option[Boolean] =
-    import quotes.reflect.*
-
-    annotations.collectFirst:
-      case Apply(Select(New(tpt), _), List(Literal(constant)))
-          if tpt.tpe <:< TypeRepr.of[A] =>
-        constant.value.asInstanceOf[Boolean]
+        constant.value.asInstanceOf[R]
 
   private def isEnumLike(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
     import quotes.reflect.*
