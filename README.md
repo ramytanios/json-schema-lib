@@ -20,6 +20,7 @@ libraryDependencies += "io.github.ramytanios" %% "json-schema-lib" % "<version>"
 - **Compile-time schema generation** - Zero runtime overhead with macro-based derivation
 - **Primitive type support** - String, Int, Long, Float, Double, Boolean
 - **`java.time` support** - `LocalDate` maps to `{ "type": "string", "format": "date" }`, `Instant` maps to `{ "type": "string", "format": "date-time" }`
+- **`java.util.UUID` support** - `UUID` maps to `{ "type": "string", "format": "uuid" }`
 - **Enum support** - Scala 3 enums automatically map to JSON Schema enums
 - **Nested case class support** - Case class fields are recursively inlined into the schema
 - **Seq support** - Mutable and immutable sequences

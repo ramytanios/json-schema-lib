@@ -176,6 +176,9 @@ object DeriveJsonSchema:
         case '[java.time.Instant] =>
           '{ Schema.StringSchema(format = Some("date-time")) }
 
+        case '[java.util.UUID] =>
+          '{ Schema.StringSchema(format = Some("uuid")) }
+
         case '[scala.collection.Seq[t]] =>
           val (elementSchemaExpr, _) =
             generateFieldSchema(TypeRepr.of[t], Nil, s"$fieldName.items")

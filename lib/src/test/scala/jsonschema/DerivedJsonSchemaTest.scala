@@ -618,6 +618,25 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for UUID field"):
+    case class User(id: java.util.UUID, name: String)
+    object User:
+      given JsonSchema[User] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[User].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "name": {"type": "string"}
+      },
+      "required": ["id", "name"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema for LocalDate field"):
     case class Event(name: String, date: java.time.LocalDate)
     object Event:
