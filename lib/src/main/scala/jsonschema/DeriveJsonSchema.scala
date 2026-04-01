@@ -176,6 +176,30 @@ object DeriveJsonSchema:
         case '[java.time.Instant] =>
           '{ Schema.StringSchema(format = Some("date-time")) }
 
+        case '[java.time.LocalDateTime] =>
+          '{ Schema.StringSchema(format = Some("date-time")) }
+
+        case '[java.time.OffsetDateTime] =>
+          '{ Schema.StringSchema(format = Some("date-time")) }
+
+        case '[java.time.ZonedDateTime] =>
+          '{ Schema.StringSchema(format = Some("date-time")) }
+
+        case '[java.time.LocalTime] =>
+          '{ Schema.StringSchema(format = Some("time")) }
+
+        case '[java.time.OffsetTime] =>
+          '{ Schema.StringSchema(format = Some("time")) }
+
+        case '[java.time.Duration] =>
+          '{ Schema.StringSchema(format = Some("duration")) }
+
+        case '[scala.concurrent.duration.Duration] =>
+          '{ Schema.StringSchema() }
+
+        case '[scala.concurrent.duration.FiniteDuration] =>
+          '{ Schema.StringSchema() }
+
         case '[java.util.UUID] =>
           '{ Schema.StringSchema(format = Some("uuid")) }
 
@@ -190,6 +214,11 @@ object DeriveJsonSchema:
               uniqueItems = ${ Expr(uniqueItems) }
             )
           }
+
+        case '[Map[String, t]] =>
+          val (valueSchemaExpr, _) =
+            generateFieldSchema(TypeRepr.of[t], Nil, s"$fieldName.additionalProperties")
+          '{ Schema.MapSchema(additionalProperties = $valueSchemaExpr) }
 
         case '[Set[t]] =>
           Expr.summon[JsonSchema[t]] match

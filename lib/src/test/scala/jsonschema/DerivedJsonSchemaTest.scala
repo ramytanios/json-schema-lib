@@ -718,6 +718,249 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for LocalDateTime field"):
+    case class Event(name: String, startsAt: java.time.LocalDateTime)
+    object Event:
+      given JsonSchema[Event] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Event].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "startsAt": {"type": "string", "format": "date-time"}
+      },
+      "required": ["name", "startsAt"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for OffsetDateTime field"):
+    case class Event(name: String, startsAt: java.time.OffsetDateTime)
+    object Event:
+      given JsonSchema[Event] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Event].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "startsAt": {"type": "string", "format": "date-time"}
+      },
+      "required": ["name", "startsAt"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for ZonedDateTime field"):
+    case class Event(name: String, startsAt: java.time.ZonedDateTime)
+    object Event:
+      given JsonSchema[Event] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Event].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "startsAt": {"type": "string", "format": "date-time"}
+      },
+      "required": ["name", "startsAt"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for LocalTime field"):
+    case class Schedule(label: String, at: java.time.LocalTime)
+    object Schedule:
+      given JsonSchema[Schedule] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Schedule].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "label": {"type": "string"},
+        "at": {"type": "string", "format": "time"}
+      },
+      "required": ["label", "at"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for OffsetTime field"):
+    case class Schedule(label: String, at: java.time.OffsetTime)
+    object Schedule:
+      given JsonSchema[Schedule] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Schedule].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "label": {"type": "string"},
+        "at": {"type": "string", "format": "time"}
+      },
+      "required": ["label", "at"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for Duration field"):
+    case class Job(name: String, timeout: java.time.Duration)
+    object Job:
+      given JsonSchema[Job] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Job].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "timeout": {"type": "string", "format": "duration"}
+      },
+      "required": ["name", "timeout"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for scala.concurrent.duration.Duration field"):
+    case class Job(name: String, timeout: scala.concurrent.duration.Duration)
+    object Job:
+      given JsonSchema[Job] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Job].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "timeout": {"type": "string"}
+      },
+      "required": ["name", "timeout"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for scala.concurrent.duration.FiniteDuration field"):
+    case class Job(name: String, timeout: scala.concurrent.duration.FiniteDuration)
+    object Job:
+      given JsonSchema[Job] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Job].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "timeout": {"type": "string"}
+      },
+      "required": ["name", "timeout"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class with Map[String, String] field"):
+    case class Config(settings: Map[String, String])
+    object Config:
+      given JsonSchema[Config] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Config].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      },
+      "required": ["settings"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class with Map[String, Int] field"):
+    case class Scores(values: Map[String, Int])
+    object Scores:
+      given JsonSchema[Scores] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Scores].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "object",
+          "additionalProperties": {"type": "integer"}
+        }
+      },
+      "required": ["values"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class with Option[Map[String, String]] field"):
+    case class Profile(metadata: Option[Map[String, String]])
+    object Profile:
+      given JsonSchema[Profile] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Profile].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class with Map[String, nested case class] field"):
+    @annotation.nowarn("msg=unused local definition")
+    case class Info(value: String)
+    case class Registry(entries: Map[String, Info])
+    object Registry:
+      given JsonSchema[Registry] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Registry].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "entries": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {"type": "string"}
+            },
+            "required": ["value"]
+          }
+        }
+      },
+      "required": ["entries"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema with title and description"):
     @Title("Product") @Description("A product in the catalog")
     @Description("This case class represents a product with a name and price")

@@ -41,6 +41,77 @@ class JsonSchemaTest extends FunSuite:
     val expected = parse("""{"type": "boolean"}""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
 
+  test("UUID schema generates correct JSON"):
+    val schema = JsonSchema[java.util.UUID].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string", "format": "uuid"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("LocalDate schema generates correct JSON"):
+    val schema = JsonSchema[java.time.LocalDate].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string", "format": "date"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("LocalTime schema generates correct JSON"):
+    val schema = JsonSchema[java.time.LocalTime].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string", "format": "time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("OffsetTime schema generates correct JSON"):
+    val schema = JsonSchema[java.time.OffsetTime].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string", "format": "time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("Instant schema generates correct JSON"):
+    val schema = JsonSchema[java.time.Instant].schema
+    val json = schema.toJson
+    val expected =
+      parse("""{"type": "string", "format": "date-time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("LocalDateTime schema generates correct JSON"):
+    val schema = JsonSchema[java.time.LocalDateTime].schema
+    val json = schema.toJson
+    val expected =
+      parse("""{"type": "string", "format": "date-time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("OffsetDateTime schema generates correct JSON"):
+    val schema = JsonSchema[java.time.OffsetDateTime].schema
+    val json = schema.toJson
+    val expected =
+      parse("""{"type": "string", "format": "date-time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("ZonedDateTime schema generates correct JSON"):
+    val schema = JsonSchema[java.time.ZonedDateTime].schema
+    val json = schema.toJson
+    val expected =
+      parse("""{"type": "string", "format": "date-time"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("java.time.Duration schema generates correct JSON"):
+    val schema = JsonSchema[java.time.Duration].schema
+    val json = schema.toJson
+    val expected =
+      parse("""{"type": "string", "format": "duration"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("scala Duration schema generates correct JSON"):
+    val schema = JsonSchema[scala.concurrent.duration.Duration].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("FiniteDuration schema generates correct JSON"):
+    val schema = JsonSchema[scala.concurrent.duration.FiniteDuration].schema
+    val json = schema.toJson
+    val expected = parse("""{"type": "string"}""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
   test("String schema with constraints"):
     val schema = Schema.StringSchema(
       minLength = Some(5),
@@ -120,6 +191,24 @@ class JsonSchemaTest extends FunSuite:
     val expected = parse("""{
       "type": "array",
       "items": {"type": "string"}
+    }""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("Map schema with string values"):
+    val schema = Schema.MapSchema(additionalProperties = Schema.StringSchema())
+    val json = schema.toJson
+    val expected = parse("""{
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    }""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+
+  test("Map schema with integer values"):
+    val schema = Schema.MapSchema(additionalProperties = Schema.IntegerSchema())
+    val json = schema.toJson
+    val expected = parse("""{
+      "type": "object",
+      "additionalProperties": {"type": "integer"}
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
 

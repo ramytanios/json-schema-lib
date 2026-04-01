@@ -161,4 +161,16 @@ object Schema:
         else base.add("required", Json.fromValues(required.map(Json.fromString)))
       Json.fromJsonObject(withRequired)
 
+  /**
+   * An object type schema for Map types, using additionalProperties
+   */
+  case class MapSchema(additionalProperties: Schema) extends Schema:
+    def toJson: Json =
+      Json.fromJsonObject(
+        JsonObject(
+          "type" -> Json.fromString("object"),
+          "additionalProperties" -> additionalProperties.toJson
+        )
+      )
+
 given Encoder[Schema] = Encoder.instance(_.toJson)
