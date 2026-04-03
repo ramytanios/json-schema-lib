@@ -12,32 +12,41 @@ sealed trait Schema:
 
 object Schema:
 
+  given Encoder[Schema] = Encoder.instance(_.toJson)
+
   extension (sch: Schema)
+    private def withOptionalStringField(key: String, value: Option[String]): Schema =
+      new Schema:
+        def toJson: Json =
+          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
+          Json.fromJsonObject(value.fold(base)(v => base.add(key, Json.fromString(v))))
+
     /**
      * Add a title to the schema.
      * This will create a new schema with the title added to the JSON representation.
      */
     def withTitle(title: Option[String]): Schema =
-      new Schema:
-        def toJson: Json =
-          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
-          Json.fromJsonObject(
-            title.fold(base)(title => base.add("title", Json.fromString(title)))
-          )
+      withOptionalStringField("title", title)
 
     /**
      * Add a description to the schema.
      * This will create a new schema with the description added to the JSON representation.
      */
     def withDescription(description: Option[String]): Schema =
-      new Schema:
-        def toJson: Json =
-          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
-          Json.fromJsonObject(
-            description.fold(base)(description =>
-              base.add("description", Json.fromString(description))
-            )
-          )
+      withOptionalStringField("description", description)
+
+  private def buildNumericJson[N](typeName: String, encode: N => Json)(
+      minimum: Option[N],
+      maximum: Option[N],
+      exclusiveMinimum: Option[N],
+      exclusiveMaximum: Option[N]
+  ): Json =
+    val base = JsonObject("type" -> Json.fromString(typeName))
+    val w1 = minimum.fold(base)(v => base.add("minimum", encode(v)))
+    val w2 = maximum.fold(w1)(v => w1.add("maximum", encode(v)))
+    val w3 = exclusiveMinimum.fold(w2)(v => w2.add("exclusiveMinimum", encode(v)))
+    val w4 = exclusiveMaximum.fold(w3)(v => w3.add("exclusiveMaximum", encode(v)))
+    Json.fromJsonObject(w4)
 
   /**
    * A string type schema
@@ -68,17 +77,10 @@ object Schema:
       exclusiveMaximum: Option[Int] = None
   ) extends Schema:
     def toJson: Json =
-      val base = JsonObject("type" -> Json.fromString("integer"))
-      val withMinimum = minimum.fold(base)(min => base.add("minimum", Json.fromInt(min)))
-      val withMaximum =
-        maximum.fold(withMinimum)(max => withMinimum.add("maximum", Json.fromInt(max)))
-      val withExclusiveMin = exclusiveMinimum.fold(withMaximum)(min =>
-        withMaximum.add("exclusiveMinimum", Json.fromInt(min))
-      )
-      val withExclusiveMax = exclusiveMaximum.fold(withExclusiveMin)(max =>
-        withExclusiveMin.add("exclusiveMaximum", Json.fromInt(max))
-      )
-      Json.fromJsonObject(withExclusiveMax)
+      Schema.buildNumericJson(
+        "integer",
+        Json.fromInt
+      )(minimum, maximum, exclusiveMinimum, exclusiveMaximum)
 
   /**
    * A number type schema (for floating point numbers)
@@ -90,17 +92,12 @@ object Schema:
       exclusiveMaximum: Option[Double] = None
   ) extends Schema:
     def toJson: Json =
-      val base = JsonObject("type" -> Json.fromString("number"))
-      val withMinimum = minimum.fold(base)(min => base.add("minimum", Json.fromDoubleOrNull(min)))
-      val withMaximum =
-        maximum.fold(withMinimum)(max => withMinimum.add("maximum", Json.fromDoubleOrNull(max)))
-      val withExclusiveMin = exclusiveMinimum.fold(withMaximum)(min =>
-        withMaximum.add("exclusiveMinimum", Json.fromDoubleOrNull(min))
+      Schema.buildNumericJson[Double]("number", (d: Double) => Json.fromDoubleOrNull(d))(
+        minimum,
+        maximum,
+        exclusiveMinimum,
+        exclusiveMaximum
       )
-      val withExclusiveMax = exclusiveMaximum.fold(withExclusiveMin)(max =>
-        withExclusiveMin.add("exclusiveMaximum", Json.fromDoubleOrNull(max))
-      )
-      Json.fromJsonObject(withExclusiveMax)
 
   /**
    * A boolean type schema
@@ -181,5 +178,3 @@ object Schema:
           "additionalProperties" -> additionalProperties.toJson
         )
       )
-
-given Encoder[Schema] = Encoder.instance(_.toJson)
