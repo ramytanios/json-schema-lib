@@ -10,6 +10,14 @@ import io.circe.JsonObject
 sealed trait Schema:
   def toJson: Json
 
+/**
+ * Represents a JSON Schema draft version, used to declare the `$schema` keyword on a root schema.
+ */
+enum JsonSchemaVersion(val uri: String):
+  case Draft07 extends JsonSchemaVersion("http://json-schema.org/draft-07/schema#")
+  case Draft201909 extends JsonSchemaVersion("https://json-schema.org/draft/2019-09/schema")
+  case Draft202012 extends JsonSchemaVersion("https://json-schema.org/draft/2020-12/schema")
+
 object Schema:
 
   given Encoder[Schema] = Encoder.instance(_.toJson)
@@ -34,6 +42,16 @@ object Schema:
      */
     def withDescription(description: Option[String]): Schema =
       withOptionalStringField("description", description)
+
+    /**
+     * Add a `$schema` declaration to the schema.
+     * Should only be called on a root schema — nested schemas do not carry this field.
+     */
+    def withSchemaVersion(version: JsonSchemaVersion): Schema =
+      new Schema:
+        def toJson: Json =
+          val base = sch.toJson.asObject.getOrElse(JsonObject.empty)
+          Json.fromJsonObject(("$schema" -> Json.fromString(version.uri)) +: base)
 
   private def buildNumericJson[N](typeName: String, encode: N => Json)(
       minimum: Option[N],

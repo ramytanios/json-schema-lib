@@ -29,6 +29,7 @@ libraryDependencies += "io.github.ramytanios" %% "json-schema-lib" % "<version>"
 - **Map support** - `Map[String, V]` maps to `{ "type": "object", "additionalProperties": ... }`
 - **Option support** - Optional fields automatically excluded from required list
 - **Circe integration** - Built-in JSON encoding for schemas
+- **`$schema` declaration** - Annotate the root schema with a JSON Schema draft URI via `withSchemaVersion`
 
 ## Example
 
@@ -56,13 +57,16 @@ case class Profile(
 // object Profile:
 //   given JsonSchema[Profile] = DeriveJsonSchema.derived
 
-val json = JsonSchema[Profile].schema.toJson
+val json = JsonSchema[Profile].schema
+  .withSchemaVersion(JsonSchemaVersion.Draft202012)
+  .toJson
 ```
 
 **Generated JSON Schema:**
 
 ```json
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "title": "User profile",
   "properties": {
