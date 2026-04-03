@@ -110,7 +110,7 @@ object Schema:
       Json.fromJsonObject(JsonObject("type" -> Json.fromString("boolean")))
 
   /**
-   * An enum type schema
+   * An enum type schema (non-parameterized enum cases)
    */
   case class EnumSchema(values: List[String]) extends Schema:
     def toJson: Json =
@@ -160,6 +160,15 @@ object Schema:
         if required.isEmpty then base
         else base.add("required", Json.fromValues(required.map(Json.fromString)))
       Json.fromJsonObject(withRequired)
+
+  /**
+   * A oneOf type schema for ADTs (parameterized enum cases)
+   */
+  case class ParametrizedCaseEnumSchema(schemas: List[Schema]) extends Schema:
+    def toJson: Json =
+      Json.fromJsonObject(
+        JsonObject("oneOf" -> Json.fromValues(schemas.map(_.toJson)))
+      )
 
   /**
    * An object type schema for Map types, using additionalProperties

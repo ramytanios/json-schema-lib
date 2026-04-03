@@ -995,3 +995,215 @@ class DerivedJsonSchemaTest extends FunSuite:
     }""").getOrElse(io.circe.Json.Null)
 
     assertEquals(json, expected)
+
+  // ── Parameterized enum (ADT) tests ────────────────────────────────────────
+
+  test("Derive oneOf schema for parameterized enum"):
+    enum Shape:
+      case Circle(radius: Double)
+      case Rectangle(width: Double, height: Double)
+    object Shape:
+      given JsonSchema[Shape] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Shape].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": { "radius": { "type": "number" } },
+          "required": ["radius"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "width":  { "type": "number" },
+            "height": { "type": "number" }
+          },
+          "required": ["width", "height"]
+        }
+      ]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive oneOf schema for parameterized enum with optional field"):
+    enum Event:
+      case Created(id: Int, name: String)
+      case Updated(id: Int, name: Option[String])
+    object Event:
+      given JsonSchema[Event] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Event].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id":   { "type": "integer" },
+            "name": { "type": "string" }
+          },
+          "required": ["id", "name"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id":   { "type": "integer" },
+            "name": { "type": "string" }
+          },
+          "required": ["id"]
+        }
+      ]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for case class containing a parameterized enum field"):
+    enum Payload:
+      case TextPayload(text: String)
+      case NumericPayload(value: Int)
+    object Payload:
+      given JsonSchema[Payload] = DeriveJsonSchema.derived
+
+    case class Message(id: Int, payload: Payload)
+    object Message:
+      given JsonSchema[Message] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Message].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "payload": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": { "text": { "type": "string" } },
+              "required": ["text"]
+            },
+            {
+              "type": "object",
+              "properties": { "value": { "type": "integer" } },
+              "required": ["value"]
+            }
+          ]
+        }
+      },
+      "required": ["id", "payload"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  // ── `derives` keyword tests ────────────────────────────────────────────────
+
+  test("derives: simple case class"):
+    case class PersonV2(name: String, age: Int) derives JsonSchema
+
+    val schema = JsonSchema[PersonV2].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer"}
+      },
+      "required": ["name", "age"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("derives: non-parameterized enum"):
+    enum ColorV2 derives JsonSchema:
+      case Red, Green, Blue
+
+    val schema = JsonSchema[ColorV2].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "string",
+      "enum": ["Red", "Green", "Blue"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("derives: parameterized enum (ADT)"):
+    enum ShapeV2 derives JsonSchema:
+      case Circle(radius: Double)
+      case Rectangle(w: Double, h: Double)
+
+    val schema = JsonSchema[ShapeV2].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": { "radius": { "type": "number" } },
+          "required": ["radius"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "w": { "type": "number" },
+            "h": { "type": "number" }
+          },
+          "required": ["w", "h"]
+        }
+      ]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("derives: case class with constraints"):
+    case class UsernameV2(@MinLength(3) @MaxLength(20) username: String) derives JsonSchema
+
+    val schema = JsonSchema[UsernameV2].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 20
+        }
+      },
+      "required": ["username"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("derives: nested case class (outer uses derives, inner uses explicit given)"):
+    case class InnerV2(x: Int, y: Int)
+    object InnerV2:
+      given JsonSchema[InnerV2] = DeriveJsonSchema.derived
+
+    case class OuterV2(label: String, inner: InnerV2) derives JsonSchema
+
+    val schema = JsonSchema[OuterV2].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "label": {"type": "string"},
+        "inner": {
+          "type": "object",
+          "properties": {
+            "x": {"type": "integer"},
+            "y": {"type": "integer"}
+          },
+          "required": ["x", "y"]
+        }
+      },
+      "required": ["label", "inner"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)

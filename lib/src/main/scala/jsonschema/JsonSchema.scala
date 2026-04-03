@@ -178,3 +178,8 @@ object JsonSchema:
    * Extension on types to generate schema
    */
   inline def schemaFor[A](using js: JsonSchema[A]): Schema = js.schema
+
+  /**
+   * Derivation entry point used by the `derives` keyword.
+   */
+  inline def derived[A]: JsonSchema[A] = DeriveJsonSchema.derived[A]

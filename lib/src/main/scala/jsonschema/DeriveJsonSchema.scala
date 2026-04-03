@@ -28,11 +28,10 @@ object DeriveJsonSchema:
     val title = extractAnnotation[Title, String](annotations)
     val description = extractAnnotation[Description, String](annotations)
 
-    // Check if it's an enum (sealed type with case objects)
-    if typeSymbol.flags.is(Flags.Enum) || (typeSymbol.flags.is(Flags.Sealed) && isEnumLike(
-        typeSymbol
-      ))
-    then deriveEnumSchema[A](typeSymbol)
+    if isParameterizedEnum(typeSymbol) then
+      deriveParametrizedCaseEnumSchema[A](typeSymbol)
+    else if isPlainEnum(typeSymbol) then
+      deriveEnumSchema[A](typeSymbol)
     else
       // Check if it's a case class
       if !typeSymbol.flags.is(Flags.Case) then
@@ -236,21 +235,8 @@ object DeriveJsonSchema:
 
         case '[t] =>
           Expr.summon[JsonSchema[t]] match
-            case Some(jsExpr) =>
-              '{ $jsExpr.schema }
-            case None =>
-              val sym = actualType.typeSymbol
-              if sym.flags.is(Flags.Enum) || (sym.flags.is(Flags.Sealed) && isEnumLike(sym)) then
-                val enumValues = sym.children.map(_.name)
-                val valuesExpr = Expr.ofList(enumValues.map(Expr(_)))
-                '{ Schema.EnumSchema(values = $valuesExpr) }
-              else if sym.flags.is(Flags.Case) then
-                '{ ${ derivedImpl[t] }.schema }
-              else
-                report.errorAndAbort(
-                  s"Unsupported field type: ${actualType.show} for field $fieldName. " +
-                    s"Provide an explicit JsonSchema instance or use a case class."
-                )
+            case Some(jsExpr) => '{ $jsExpr.schema }
+            case None         => '{ ${ derivedImpl[t] }.schema }
 
     (
       '{ $schemaExpr.withTitle(${ Expr(title) }).withDescription(${ Expr(description) }) },
@@ -267,17 +253,48 @@ object DeriveJsonSchema:
           if tpt.tpe <:< TypeRepr.of[A] =>
         constant.value.asInstanceOf[R]
 
-  private def isEnumLike(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
+  /**
+   * True if the symbol is a plain enum: a Scala 3 `enum` with no-arg cases, or a `sealed` type
+   * whose children are all `case object`s.
+   */
+  private def isPlainEnum(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
     import quotes.reflect.*
-
-    if !symbol.flags.is(Flags.Sealed) then return false
-
-    // Get all children of the sealed type
     val children = symbol.children
-    if children.isEmpty then return false
+    val isEnum = (symbol.flags.is(Flags.Enum) && children.forall: child =>
+      !child.primaryConstructor.paramSymss.flatten.exists(_.isValDef))
+    val isSealed = (symbol.flags.is(Flags.Sealed) && children.forall: child =>
+      child.flags.is(Flags.Module) && child.flags.is(Flags.Case))
+    children.nonEmpty && (isEnum || isSealed)
 
-    // Check if all children are modules (case objects)
-    children.forall(child => child.flags.is(Flags.Module) && child.flags.is(Flags.Case))
+  /**
+   * True if the symbol is a parameterized enum: a Scala 3 `enum` with at least one case having parameters, or a `sealed` type
+   * whose children are all `case classes.
+   */
+  private def isParameterizedEnum(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
+    import quotes.reflect.*
+    val children = symbol.children
+    val isEnum = symbol.flags.is(Flags.Enum) && children.forall: child =>
+      child.primaryConstructor.paramSymss.flatten.exists(_.isValDef)
+    val isSealed = symbol.flags.is(Flags.Sealed) && children.forall: child =>
+      child.flags.is(Flags.Module) && child.flags.is(Flags.Case) &&
+        child.primaryConstructor.paramSymss.flatten.exists(_.isValDef)
+    children.nonEmpty && (isEnum || isSealed)
+
+  private def deriveParametrizedCaseEnumSchema[A: Type](using
+      Quotes
+  )(symbol: quotes.reflect.Symbol): Expr[JsonSchema[A]] =
+
+    val caseSchemas: List[Expr[Schema]] = symbol.children.map: child =>
+      child.typeRef.asType match
+        case '[t] => '{ ${ derivedImpl[t] }.schema }
+
+    val schemasListExpr = Expr.ofList(caseSchemas)
+
+    '{
+      JsonSchema.instance[A](
+        Schema.ParametrizedCaseEnumSchema(schemas = $schemasListExpr)
+      )
+    }
 
   private def deriveEnumSchema[A: Type](using
       Quotes

@@ -17,6 +17,7 @@ libraryDependencies += "io.github.ramytanios" %% "json-schema-lib" % "<version>"
 
 ## Features
 
+- **`derives` keyword support** - Idiomatic Scala 3 derivation at the definition site
 - **Compile-time schema generation** - Zero runtime overhead with macro-based derivation
 - **Primitive type support** - String, Int, Long, Float, Double, Boolean
 - **`java.time` support** - `LocalDate` → `date`, `LocalTime`/`OffsetTime` → `time`, `Instant`/`LocalDateTime`/`OffsetDateTime`/`ZonedDateTime` → `date-time`, `Duration` → `duration`
@@ -39,6 +40,7 @@ enum Role:
 
 case class Address(street: String, city: String)
 
+// Idiomatic `derives` syntax (recommended)
 @Title("User profile")
 case class Profile(
   @MinLength(3) @MaxLength(50) username: String,
@@ -48,10 +50,11 @@ case class Profile(
   address: Address,
   @MinItems(1) tags: List[String],
   bio: Option[String]
-)
+) derives JsonSchema
 
-object Profile:
-  given JsonSchema[Profile] = DeriveJsonSchema.derived
+// Equivalent explicit form (also supported)
+// object Profile:
+//   given JsonSchema[Profile] = DeriveJsonSchema.derived
 
 val json = JsonSchema[Profile].schema.toJson
 ```
