@@ -29,7 +29,7 @@ lazy val V = new {
 
 lazy val root =
   (project in file("."))
-    .aggregate(libJVM, libJS)
+    .aggregate(libJVM, libJS, excel)
     .settings(publish / skip := true)
 
 lazy val lib = crossProject(JSPlatform, JVMPlatform)
@@ -52,3 +52,16 @@ lazy val lib = crossProject(JSPlatform, JVMPlatform)
 
 lazy val libJVM = lib.jvm
 lazy val libJS = lib.js
+
+lazy val excel =
+  (project in file("excel"))
+    .dependsOn(libJVM)
+    .settings(
+      name := "json-schema-lib-excel",
+      publish / skip := true,
+      libraryDependencies ++= Seq(
+        "io.circe" %% "circe-core" % V.circe,
+        "org.scalameta" %% "munit" % V.munit % Test
+      ),
+      scalacOptions -= "-Xfatal-warnings"
+    )
