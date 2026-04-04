@@ -115,8 +115,8 @@ class ExcelFunctionBuilderTest extends FunSuite:
     val fn = ExcelFunctionBuilder.from[Req3]("MY.FUNC2", "desc")
     val js = ExcelJsGenerator.generate(List(fn), "https://example.com")
     assert(js.contains("""functionId: "MY.FUNC2""""))
-    assert(js.contains("ticker: ticker"))
-    assert(js.contains("amount: amount"))
+    assert(js.contains("ticker: ticker,"))
+    assert(js.contains("amount: amount,"))
 
   test("selfContained = false does not include axios source inline"):
     val js = ExcelJsGenerator.generate(Nil, "https://example.com", selfContained = false)
