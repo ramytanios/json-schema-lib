@@ -13,5 +13,4 @@ class Excel(functions: List[ExcelFunctionDef], centralUrl: String):
   def `functions.js`(): String =
     ExcelJsGenerator.generate(functions, centralUrl, selfContained = true)
 
-  def `functions.json`(): Json =
-    ExcelOutput.generate(functions, centralUrl).manifest.toJson
+  def `functions.json`(): Json = ExcelFunctionsManifest(functions).toJson
