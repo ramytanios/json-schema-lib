@@ -15,7 +15,7 @@ import io.circe.Json
  */
 class Excel(functions: List[ExcelFunction.Def], centralUrl: String, namespace: String = ""):
 
-  def functionsJs(): String = ExcelJsGenerator.generate(functions, centralUrl, true)
+  def functionsJs(): String = ExcelJsGenerator.generate(centralUrl, true)
 
   def functionsJson(): Json = ExcelFunctionsManifest(functions).toJson
 

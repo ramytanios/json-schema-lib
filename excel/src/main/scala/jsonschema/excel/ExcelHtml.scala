@@ -32,6 +32,7 @@ object ExcelHtml:
         |  <div id="search-box">
         |    <input id="q" type="text" placeholder="Search functions…" oninput="doFilter()"/>
         |  </div>
+        |  <button id="reload-btn" onclick="reload()">Reload Functions</button>
         |  <div id="count"></div>
         |  <div id="list"></div>
         |  <div id="empty">No matching functions.</div>
@@ -111,6 +112,23 @@ object ExcelHtml:
        |  .popt { color: #a19f9d; font-style: italic; }
        |
        |  #empty { padding: 20px; text-align: center; color: #a19f9d; display: none; }
+       |
+       |  #reload-btn {
+       |    display: block;
+       |    width: calc(100% - 20px);
+       |    margin: 8px 10px;
+       |    padding: 6px 12px;
+       |    background: #217346;
+       |    color: #fff;
+       |    border: none;
+       |    border-radius: 2px;
+       |    font-size: 13px;
+       |    cursor: pointer;
+       |  }
+       |
+       |  #reload-btn:hover { background: #185c37; }
+       |
+       |  #reload-btn:disabled { background: #a19f9d; cursor: default; }
        |""".stripMargin
 
   // ── Client-side script ──────────────────────────────────────────────────────
@@ -160,4 +178,21 @@ object ExcelHtml:
         |    fns = data.functions || [];
         |    render(fns);
         |  });
+        |
+        |  async function reload() {
+        |    const btn = document.getElementById("reload-btn");
+        |    btn.disabled = true;
+        |    btn.textContent = "Reloading…";
+        |    try {
+        |      await OfficeRuntime.storage.setItem("cf-reload-signal", "1");
+        |      const data = await fetch("/functions.json").then(r => r.json());
+        |      fns = data.functions || [];
+        |      doFilter();
+        |      btn.textContent = "Reload Functions";
+        |    } catch(e) {
+        |      btn.textContent = "Error — retry";
+        |    } finally {
+        |      btn.disabled = false;
+        |    }
+        |  }
         |""".stripMargin

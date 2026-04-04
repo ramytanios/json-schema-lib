@@ -14,32 +14,42 @@ object ExcelJsGenerator:
       conn.setReadTimeout(10_000)
       scala.io.Source.fromInputStream(conn.getInputStream).mkString
 
-  private def renderFunction(fn: ExcelFunction.Def): String =
-    val paramNames = fn.parameters.map(_.name).mkString(", ")
-    val paramLines = fn.parameters.map(p => s"${p.name}: ${p.name},").mkString("\n")
-    s"""|CustomFunctions.associate(
-        |  "${fn.id}",
-        |  async function($paramNames) {
-        |    const response = await axios.post(CENTRAL_URL, {
-        |      functionId: "${fn.id}",
-        |      params: {
-        |         $paramLines
-        |      },
-        |    });
-        |    return response.data;
-        |  }
-        |);""".stripMargin
+  private val dynamicCore: String =
+    """|let registeredIds = new Set();
+       |
+       |async function loadAndRegister() {
+       |  const data = await fetch("/functions.json").then(r => r.json());
+       |  for (const fn of (data.functions || [])) {
+       |    if (registeredIds.has(fn.id)) continue;
+       |    registeredIds.add(fn.id);
+       |    CustomFunctions.associate(fn.id, async function(...args) {
+       |      const params = {};
+       |      fn.parameters.forEach((p, i) => { params[p.name] = args[i]; });
+       |      const resp = await axios.post(CENTRAL_URL, { functionId: fn.id, params });
+       |      return resp.data;
+       |    });
+       |  }
+       |}
+       |
+       |loadAndRegister();
+       |
+       |setInterval(async () => {
+       |  const sig = await OfficeRuntime.storage.getItem("cf-reload-signal");
+       |  if (sig) {
+       |    await OfficeRuntime.storage.removeItem("cf-reload-signal");
+       |    await loadAndRegister();
+       |  }
+       |}, 2000);
+       |""".stripMargin
 
   def generate(
-      functions: List[ExcelFunction.Def],
       centralUrl: String,
       selfContained: Boolean = false
   ): String =
-    val bodies = functions.map(renderFunction).mkString("\n\n")
     val core =
       s"""|const CENTRAL_URL = "$centralUrl";
           |
-          |$bodies
+          |$dynamicCore
           |""".stripMargin
     if selfContained then s"${Axios.jsSource()}\n\n$core"
     else core
