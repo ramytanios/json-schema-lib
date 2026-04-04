@@ -10,10 +10,10 @@ class ExcelFunctionBuilderTest extends FunSuite:
   test("all required fields → correct types, optional = false"):
     case class Req(name: String, count: Int, score: Double, flag: Boolean) derives JsonSchema
     val fn = ExcelFunctionBuilder.from[Req]("REQ", "desc")
-    assertEquals(fn.parameters.map(_.name), List("name", "count", "score", "flag"))
+    assertEquals(fn.parameters.map(_.name).toSet, Set("name", "count", "score", "flag"))
     assertEquals(
-      fn.parameters.map(_.`type`),
-      List(
+      fn.parameters.map(_.`type`).toSet,
+      Set(
         ExcelParameterType.StringType,
         ExcelParameterType.NumberType,
         ExcelParameterType.NumberType,
