@@ -12,7 +12,7 @@ case class ExcelFunctionDef(
 )
 
 object ExcelFunctionDef:
-  given Encoder[ExcelFunctionDef] = Encoder.instance { fn =>
+  given Encoder[ExcelFunctionDef] = Encoder.instance: fn =>
     Json.fromJsonObject(
       JsonObject(
         "id" -> Json.fromString(fn.id),
@@ -28,4 +28,3 @@ object ExcelFunctionDef:
         )
       )
     )
-  }

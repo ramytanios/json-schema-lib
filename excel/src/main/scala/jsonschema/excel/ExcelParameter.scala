@@ -12,7 +12,8 @@ case class ExcelParameter(
 )
 
 object ExcelParameter:
-  given Encoder[ExcelParameter] = Encoder.instance { p =>
+
+  given Encoder[ExcelParameter] = Encoder.instance: p =>
     Json.fromJsonObject(
       JsonObject(
         "name" -> Json.fromString(p.name),
@@ -21,4 +22,3 @@ object ExcelParameter:
         "optional" -> Json.fromBoolean(p.optional)
       )
     )
-  }

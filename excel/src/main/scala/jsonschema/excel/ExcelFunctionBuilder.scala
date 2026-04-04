@@ -13,7 +13,7 @@ object ExcelFunctionBuilder:
     val properties = cursor.downField("properties").as[Map[String, Json]].getOrElse(Map.empty)
     val reqPairs = required.flatMap(n => properties.get(n).map(n -> _))
     val optPairs = (properties -- required.toSet).toList.sortBy(_._1)
-    val params = (reqPairs ++ optPairs).map { (name, fieldJson) =>
+    val params = (reqPairs ++ optPairs).map: (name, fieldJson) =>
       val fc = fieldJson.hcursor
       val excelType = fc.get[String]("type").toOption match
         case Some("string")  => ExcelParameterType.StringType
@@ -27,5 +27,5 @@ object ExcelFunctionBuilder:
         .orElse(fc.get[String]("title").toOption)
         .getOrElse("")
       ExcelParameter(name, desc, excelType, !required.contains(name))
-    }
+
     ExcelFunctionDef(id, id, description, params)

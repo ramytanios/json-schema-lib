@@ -3,6 +3,7 @@ package jsonschema.excel
 case class ExcelOutput(manifest: ExcelFunctionsManifest, js: String)
 
 object ExcelOutput:
+
   def generate(
       functions: List[ExcelFunctionDef],
       centralUrl: String,

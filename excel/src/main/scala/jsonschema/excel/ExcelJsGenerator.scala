@@ -2,14 +2,15 @@ package jsonschema.excel
 
 object ExcelJsGenerator:
 
-  private val axiosVersion = "1.7.9"
-  private val axiosCdnUrl = s"https://cdn.jsdelivr.net/npm/axios@$axiosVersion/dist/axios.min.js"
+  private object Axios:
 
-  private def fetchAxiosSource(): String =
-    val conn = java.net.URI.create(axiosCdnUrl).toURL.openConnection()
-    conn.setConnectTimeout(10_000)
-    conn.setReadTimeout(10_000)
-    scala.io.Source.fromInputStream(conn.getInputStream).mkString
+    private val version = "1.14.0"
+    private val cdnUrl = s"https://cdn.jsdelivr.net/npm/axios@$version/dist/axios.min.js"
+    def jsSource(): String =
+      val conn = java.net.URI.create(cdnUrl).toURL.openConnection()
+      conn.setConnectTimeout(10_000)
+      conn.setReadTimeout(10_000)
+      scala.io.Source.fromInputStream(conn.getInputStream).mkString
 
   private def renderFunction(fn: ExcelFunctionDef): String =
     val paramNames = fn.parameters.map(_.name).mkString(", ")
@@ -26,7 +27,7 @@ object ExcelJsGenerator:
         |    const response = await axios.post(CENTRAL_URL, {
         |      functionId: "${fn.id}",
         |      params: {
-        |$paramLines
+        |         $paramLines
         |      },
         |    });
         |    return response.data;
@@ -44,5 +45,5 @@ object ExcelJsGenerator:
           |
           |$bodies
           |""".stripMargin
-    if selfContained then s"${fetchAxiosSource()}\n\n$core"
+    if selfContained then s"${Axios.jsSource()}\n\n$core"
     else core
