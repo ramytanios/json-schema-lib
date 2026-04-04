@@ -225,3 +225,45 @@ class JsonSchemaTest extends FunSuite:
       }
     }""").getOrElse(io.circe.Json.Null)
     assertEquals(json, expected)
+
+  test("withSchemaVersion adds $schema as the first field (Draft-07)"):
+    val schema = JsonSchema[String].schema.withSchemaVersion(JsonSchemaVersion.Draft07)
+    val json = schema.toJson
+    val expected =
+      parse("""{"$schema": "http://json-schema.org/draft-07/schema#", "type": "string"}""")
+        .getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+    assertEquals(json.hcursor.keys.flatMap(_.headOption), Some("$schema"))
+
+  test("withSchemaVersion adds $schema as the first field (Draft 2019-09)"):
+    val schema = JsonSchema[Int].schema.withSchemaVersion(JsonSchemaVersion.Draft201909)
+    val json = schema.toJson
+    val expected =
+      parse("""{"$schema": "https://json-schema.org/draft/2019-09/schema", "type": "integer"}""")
+        .getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+    assertEquals(json.hcursor.keys.flatMap(_.headOption), Some("$schema"))
+
+  test("withSchemaVersion adds $schema as the first field (Draft 2020-12)"):
+    val schema = JsonSchema[Boolean].schema.withSchemaVersion(JsonSchemaVersion.Draft202012)
+    val json = schema.toJson
+    val expected =
+      parse("""{"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "boolean"}""")
+        .getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+    assertEquals(json.hcursor.keys.flatMap(_.headOption), Some("$schema"))
+
+  test("withSchemaVersion composes with withTitle and withDescription"):
+    val schema = JsonSchema[String].schema
+      .withTitle(Some("My Schema"))
+      .withDescription(Some("A test schema"))
+      .withSchemaVersion(JsonSchemaVersion.Draft202012)
+    val json = schema.toJson
+    val expected = parse("""{
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "string",
+      "title": "My Schema",
+      "description": "A test schema"
+    }""").getOrElse(io.circe.Json.Null)
+    assertEquals(json, expected)
+    assertEquals(json.hcursor.keys.flatMap(_.headOption), Some("$schema"))

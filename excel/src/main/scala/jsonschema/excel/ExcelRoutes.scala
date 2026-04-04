@@ -1,0 +1,35 @@
+package jsonschema.excel
+
+import cats.effect.IO
+import org.http4s.HttpRoutes
+import org.http4s.MediaType
+import org.http4s.dsl.io.*
+import org.http4s.headers.`Content-Type`
+
+object ExcelRoutes:
+
+  /** Builds the static-file routes for an [[Excel]] add-in, pre-computing all assets. */
+  def routes(excel: Excel): IO[HttpRoutes[IO]] =
+    for
+      js <- IO.blocking(excel.functionsJs())
+      json <- IO.pure(excel.functionsJson().noSpaces)
+      html <- IO.pure(excel.functionsHtml())
+      taskpane <- IO.pure(excel.taskpaneHtml())
+      icon16 <- IO.blocking(excel.iconPng(16))
+      icon32 <- IO.blocking(excel.iconPng(32))
+      icon80 <- IO.blocking(excel.iconPng(80))
+    yield HttpRoutes.of[IO]:
+      case GET -> Root / "functions.js" =>
+        Ok(js).map(_.withContentType(`Content-Type`(MediaType.unsafeParse("text/javascript"))))
+      case GET -> Root / "functions.json" =>
+        Ok(json).map(_.withContentType(`Content-Type`(MediaType.application.json)))
+      case GET -> Root / "functions.html" =>
+        Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+      case GET -> Root / "taskpane.html" =>
+        Ok(taskpane).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+      case GET -> Root / "icon-16.png" =>
+        Ok(icon16).map(_.withContentType(`Content-Type`(MediaType.image.png)))
+      case GET -> Root / "icon-32.png" =>
+        Ok(icon32).map(_.withContentType(`Content-Type`(MediaType.image.png)))
+      case GET -> Root / "icon-80.png" =>
+        Ok(icon80).map(_.withContentType(`Content-Type`(MediaType.image.png)))

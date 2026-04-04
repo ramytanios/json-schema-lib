@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+Minimal Office Add-in manifest for sideloading ExcelMain in Excel.
+
+  Prerequisites:
+    1. Start the server:  sbt "excel/runMain jsonschema.excel.ExcelMain"
+    2. Verify it's up:    curl http://localhost:7777/functions.json
+
+Sideloading instructions:
+  https://learn.microsoft.com/en-us/office/dev/add-ins/testing/test-debug-office-add-ins
+
+  Functions exposed (all prefixed EXMAIN. in Excel):
+    =EXMAIN.ADD(x, y)
+    =EXMAIN.REPEAT(text, times, [sep])
+    =EXMAIN.FETCH_POST(id)
+    =EXMAIN.CURRENT_TEMP(lat, lon)
+-->
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <!-- Unique add-in ID — regenerate if you deploy multiple instances -->
+  <Id>a1b2c3d4-e5f6-7890-abcd-ef1234567891</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>ExcelMain (local dev)</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="ExcelMain Tst"/>
+  <Description DefaultValue="Custom functions served by local ExcelMain server"/>
+
+  <IconUrl DefaultValue="http://localhost:7777/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="http://localhost:7777/icon-80.png"/>
+
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+
+  <!-- Minimum requirement: CustomFunctionsRuntime 1.1 -->
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="CustomFunctionsRuntime"/>
+    </Sets>
+  </Requirements>
+
+  <DefaultSettings>
+    <!-- Task-pane host page -->
+    <SourceLocation DefaultValue="http://localhost:7777/taskpane.html"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+                    xsi:type="VersionOverridesV1_0">
+
+    <Hosts>
+      <Host xsi:type="Workbook">
+
+        <!-- Custom functions runtime (all form factors) -->
+        <AllFormFactors>
+          <ExtensionPoint xsi:type="CustomFunctions">
+            <Script>
+              <SourceLocation resid="FunctionsUrl"/>
+            </Script>
+            <Page>
+              <SourceLocation resid="HtmlUrl"/>
+            </Page>
+            <Metadata>
+              <SourceLocation resid="JsonUrl"/>
+            </Metadata>
+            <Namespace resid="Namespace"/>
+          </ExtensionPoint>
+        </AllFormFactors>
+
+        <!-- Ribbon button (desktop only) — note: singular DesktopFormFactor -->
+        <DesktopFormFactor>
+          <FunctionFile resid="FunctionsUrl"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="ExMainGroup">
+                <Label resid="GroupLabel"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon16"/>
+                  <bt:Image size="32" resid="Icon32"/>
+                  <bt:Image size="80" resid="Icon80"/>
+                </Icon>
+                <Control xsi:type="Button" id="OpenTaskpane">
+                  <Label resid="TaskpaneButtonLabel"/>
+                  <Supertip>
+                    <Title resid="TaskpaneButtonLabel"/>
+                    <Description resid="TaskpaneButtonDesc"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon16"/>
+                    <bt:Image size="32" resid="Icon32"/>
+                    <bt:Image size="80" resid="Icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ExMainTaskpane</TaskpaneId>
+                    <SourceLocation resid="TaskpaneUrl"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon16" DefaultValue="http://localhost:7777/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="http://localhost:7777/icon-32.png"/>
+        <bt:Image id="Icon80" DefaultValue="http://localhost:7777/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="HtmlUrl"      DefaultValue="http://localhost:7777/functions.html"/>
+        <bt:Url id="FunctionsUrl" DefaultValue="http://localhost:7777/functions.js"/>
+        <bt:Url id="JsonUrl"      DefaultValue="http://localhost:7777/functions.json"/>
+        <bt:Url id="TaskpaneUrl"  DefaultValue="http://localhost:7777/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Namespace"           DefaultValue="EXMAIN"/>
+        <bt:String id="GroupLabel"          DefaultValue="Functions"/>
+        <bt:String id="TaskpaneButtonLabel" DefaultValue="Function Reference"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="TaskpaneButtonDesc"
+                   DefaultValue="Browse and search all available custom functions"/>
+      </bt:LongStrings>
+    </Resources>
+
+  </VersionOverrides>
+
+</OfficeApp>
