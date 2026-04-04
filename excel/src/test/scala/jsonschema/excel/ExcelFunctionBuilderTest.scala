@@ -130,10 +130,10 @@ class ExcelFunctionBuilderTest extends FunSuite:
       ExcelFunctionBuilder.from[RiskRequest]("RISK.COMPUTE_VAR", "Computes VaR")
     )
     val excel = new Excel(fns, "https://central-api.example.com/route")
-    val js = excel.`functions.js`()
+    val js = excel.`functionsJs`()
     assert(js.contains(""""PRICING.GET_PRICE""""))
     assert(js.contains(""""RISK.COMPUTE_VAR""""))
-    val manifestJson = excel.`functions.json`()
+    val manifestJson = excel.functionsJson()
     assertEquals(
       manifestJson.hcursor.downField("functions").as[List[io.circe.Json]].map(_.size),
       Right(2)

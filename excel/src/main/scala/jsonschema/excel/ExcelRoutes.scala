@@ -11,10 +11,10 @@ object ExcelRoutes:
   /** Builds the static-file routes for an [[Excel]] add-in, pre-computing all assets. */
   def routes(excel: Excel): IO[HttpRoutes[IO]] =
     for
-      js <- IO.blocking(excel.`functions.js`())
-      json <- IO.pure(excel.`functions.json`().noSpaces)
-      html <- IO.pure(excel.`functions.html`())
-      taskpane <- IO.pure(excel.`taskpane.html`())
+      js <- IO.blocking(excel.functionsJs())
+      json <- IO.pure(excel.functionsJson().noSpaces)
+      html <- IO.pure(excel.functionsHtml())
+      taskpane <- IO.pure(excel.taskpaneHtml())
       icon16 <- IO.blocking(excel.iconPng(16))
       icon32 <- IO.blocking(excel.iconPng(32))
       icon80 <- IO.blocking(excel.iconPng(80))
