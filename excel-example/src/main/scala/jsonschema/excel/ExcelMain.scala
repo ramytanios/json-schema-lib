@@ -71,10 +71,10 @@ object ExcelMain extends IOApp.Simple:
 
   private val excel = Excel(
     functions = List(
-      ExcelFunctionBuilder.from[Add]("ADD"),
-      ExcelFunctionBuilder.from[Repeat]("REPEAT"),
-      ExcelFunctionBuilder.from[FetchPost]("FETCH_POST"),
-      ExcelFunctionBuilder.from[CurrentTemp]("CURRENT_TEMP")
+      ExcelFunction.from[Add]("ADD"),
+      ExcelFunction.from[Repeat]("REPEAT"),
+      ExcelFunction.from[FetchPost]("FETCH_POST"),
+      ExcelFunction.from[CurrentTemp]("CURRENT_TEMP")
     ),
     centralUrl = "http://localhost:7777/invoke",
     namespace = "EXMAIN"

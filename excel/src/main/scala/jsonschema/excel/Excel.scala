@@ -13,7 +13,7 @@ import io.circe.Json
  *   The Excel namespace prefix used in formula syntax (e.g. "EXMAIN" → =EXMAIN.ADD(...)). Should
  *   match the Namespace resource in the add-in manifest.
  */
-class Excel(functions: List[ExcelFunctionDef], centralUrl: String, namespace: String = ""):
+class Excel(functions: List[ExcelFunction.Def], centralUrl: String, namespace: String = ""):
 
   def functionsJs(): String = ExcelJsGenerator.generate(functions, centralUrl, true)
 
