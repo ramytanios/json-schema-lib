@@ -43,21 +43,25 @@ object ExcelMain extends IOApp.Simple:
 
   // ── Function input schemas ─────────────────────────────────────────────────
 
+  @Description("Add two numbers")
   case class Add(
       @Description("first operand") x: Double,
       @Description("second operand") y: Double
   ) derives JsonSchema
 
+  @Description("Repeat a string N times")
   case class Repeat(
       @Description("text to repeat") text: String,
       @Description("number of repetitions") times: Int,
       @Description("separator between repetitions (default: space)") sep: Option[String]
   ) derives JsonSchema
 
+  @Description("Fetch the title of a JSONPlaceholder post")
   case class FetchPost(
       @Description("post ID between 1 and 100") id: Int
   ) derives JsonSchema
 
+  @Description("Current temperature (°C) from Open-Meteo")
   case class CurrentTemp(
       @Description("latitude  (e.g. 48.85 for Paris, 40.71 for New York)") lat: Double,
       @Description("longitude (e.g.  2.35 for Paris, -74.0 for New York)") lon: Double
@@ -67,13 +71,10 @@ object ExcelMain extends IOApp.Simple:
 
   private val excel = Excel(
     functions = List(
-      ExcelFunctionBuilder.from[Add]("ADD", "Add two numbers"),
-      ExcelFunctionBuilder.from[Repeat]("REPEAT", "Repeat a string N times"),
-      ExcelFunctionBuilder.from[FetchPost]("FETCH_POST", "Fetch the title of a JSONPlaceholder post"),
-      ExcelFunctionBuilder.from[CurrentTemp](
-        "CURRENT_TEMP",
-        "Current temperature (°C) from Open-Meteo"
-      )
+      ExcelFunctionBuilder.from[Add]("ADD"),
+      ExcelFunctionBuilder.from[Repeat]("REPEAT"),
+      ExcelFunctionBuilder.from[FetchPost]("FETCH_POST"),
+      ExcelFunctionBuilder.from[CurrentTemp]("CURRENT_TEMP")
     ),
     centralUrl = "http://localhost:7777/invoke",
     namespace = "EXMAIN"

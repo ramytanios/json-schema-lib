@@ -5,10 +5,15 @@ import jsonschema.JsonSchema
 
 object ExcelFunctionBuilder:
 
-  def from[A](id: String, description: String)(using js: JsonSchema[A]): ExcelFunctionDef =
+  def from[A](id: String)(using js: JsonSchema[A]): ExcelFunctionDef =
     val cursor = js.schema.toJson.hcursor
     if cursor.get[String]("type").getOrElse("") != "object" then
       throw IllegalArgumentException("ExcelFunctionBuilder.from requires a case class JsonSchema")
+    val description = cursor
+      .get[String]("description")
+      .getOrElse(throw IllegalArgumentException(
+        "ExcelFunctionBuilder.from requires a description in the JsonSchema"
+      ))
     val required = cursor.downField("required").as[List[String]].getOrElse(Nil).toSet
     val properties = cursor.downField("properties").as[Map[String, Json]].getOrElse(Map.empty)
     val params =
