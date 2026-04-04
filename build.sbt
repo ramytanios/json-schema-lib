@@ -31,7 +31,7 @@ lazy val V = new {
 
 lazy val root =
   (project in file("."))
-    .aggregate(libJVM, libJS, excel)
+    .aggregate(libJVM, libJS, excel, excelExample)
     .settings(publish / skip := true)
 
 lazy val lib = crossProject(JSPlatform, JVMPlatform)
@@ -60,15 +60,25 @@ lazy val excel =
     .dependsOn(libJVM)
     .settings(
       name := "json-schema-lib-excel",
+      libraryDependencies ++= Seq(
+        "io.circe"      %% "circe-core"   % V.circe,
+        "org.http4s"    %% "http4s-dsl"   % V.http4s,
+        "org.typelevel" %% "cats-effect"  % V.catsEffect,
+        "org.scalameta" %% "munit"        % V.munit % Test
+      ),
+      scalacOptions -= "-Xfatal-warnings"
+    )
+
+lazy val excelExample =
+  (project in file("excel-example"))
+    .dependsOn(excel)
+    .settings(
+      name := "json-schema-lib-excel-example",
       publish / skip := true,
       libraryDependencies ++= Seq(
-        "io.circe"      %% "circe-core"          % V.circe,
-        "org.http4s"    %% "http4s-ember-server"  % V.http4s,
-        "org.http4s"    %% "http4s-ember-client"  % V.http4s,
-        "org.http4s"    %% "http4s-dsl"           % V.http4s,
-        "org.http4s"    %% "http4s-circe"          % V.http4s,
-        "org.typelevel" %% "cats-effect"          % V.catsEffect,
-        "org.scalameta" %% "munit"                % V.munit % Test
+        "org.http4s"    %% "http4s-ember-server" % V.http4s,
+        "org.http4s"    %% "http4s-ember-client" % V.http4s,
+        "org.http4s"    %% "http4s-circe"        % V.http4s,
       ),
       scalacOptions -= "-Xfatal-warnings"
     )

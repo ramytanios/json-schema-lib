@@ -1,7 +1,11 @@
 package jsonschema.excel
 
+import cats.data.OptionT
 import cats.effect.IO
 import cats.effect.IOApp
+import cats.effect.Resource
+import cats.syntax.semigroupk.*
+import com.comcast.ip4s.*
 import io.circe.Json
 import io.circe.syntax.*
 import jsonschema.Description
@@ -12,28 +16,18 @@ import org.http4s.circe.*
 import org.http4s.client.Client
 import org.http4s.dsl.io.*
 import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.ember.server.EmberServerBuilder
 
 /**
  * Example server for manual HTTP testing.
  *
- * Start with: sbt "excel/runMain jsonschema.excel.ExcelMain"
- *
- * Endpoints:
- *   - GET  http://localhost:7777/functions.html  — add-in host page
- *   - GET  http://localhost:7777/functions.js    — generated JS bundle
- *   - GET  http://localhost:7777/functions.json  — functions manifest
- *   - POST http://localhost:7777/invoke          — function dispatcher
+ * Start with: sbt "excel-example/runMain jsonschema.excel.ExcelMain"
  *
  * Example invoke calls:
- *
  *   # pure computation
  *   curl -s -X POST http://localhost:7777/invoke \
  *     -H 'Content-Type: application/json' \
  *     -d '{"functionId":"ADD","params":{"x":3,"y":4}}'
- *
- *   curl -s -X POST http://localhost:7777/invoke \
- *     -H 'Content-Type: application/json' \
- *     -d '{"functionId":"REPEAT","params":{"text":"hello","times":3}}'
  *
  *   # calls jsonplaceholder.typicode.com
  *   curl -s -X POST http://localhost:7777/invoke \
@@ -60,20 +54,16 @@ object ExcelMain extends IOApp.Simple:
       @Description("separator between repetitions (default: space)") sep: Option[String]
   ) derives JsonSchema
 
-  /** Fetches a post from https://jsonplaceholder.typicode.com/posts/{id} */
   case class FetchPost(
       @Description("post ID between 1 and 100") id: Int
   ) derives JsonSchema
 
-  /** Fetches the current air temperature at a location from https://open-meteo.com (no API key). */
   case class CurrentTemp(
       @Description("latitude  (e.g. 48.85 for Paris, 40.71 for New York)") lat: Double,
       @Description("longitude (e.g.  2.35 for Paris, -74.0 for New York)") lon: Double
   ) derives JsonSchema
 
   // ── Excel instance ─────────────────────────────────────────────────────────
-
-  private val centralUrl = "http://localhost:7777/invoke"
 
   private val excel = Excel(
     functions = List(
@@ -85,7 +75,8 @@ object ExcelMain extends IOApp.Simple:
         "Current temperature (°C) from Open-Meteo"
       )
     ),
-    centralUrl = centralUrl
+    centralUrl = "http://localhost:7777/invoke",
+    namespace = "EXMAIN"
   )
 
   // ── Invoke routes ──────────────────────────────────────────────────────────
@@ -124,8 +115,7 @@ object ExcelMain extends IOApp.Simple:
                         Uri.unsafeFromString(s"https://jsonplaceholder.typicode.com/posts/$id")
                       )
                       .flatMap: json =>
-                        val title = json.hcursor.get[String]("title").getOrElse("(no title)")
-                        Ok(title.asJson)
+                        Ok(json.hcursor.get[String]("title").getOrElse("(no title)").asJson)
                 )
 
             case "CURRENT_TEMP" =>
@@ -141,11 +131,9 @@ object ExcelMain extends IOApp.Simple:
                 client
                   .expect[Json](uri)
                   .flatMap: json =>
-                    val temp = json.hcursor
-                      .downField("current_weather")
-                      .get[Double]("temperature")
-                      .getOrElse(Double.NaN)
-                    Ok(temp.asJson)
+                    Ok(json.hcursor.downField(
+                      "current_weather"
+                    ).get[Double]("temperature").getOrElse(Double.NaN).asJson)
               ).fold(e => BadRequest(e.message), identity)
 
             case other =>
@@ -153,9 +141,16 @@ object ExcelMain extends IOApp.Simple:
 
   // ── Entry point ────────────────────────────────────────────────────────────
 
+  private def logged(routes: HttpRoutes[IO]): HttpRoutes[IO] =
+    HttpRoutes[IO](req => OptionT(IO.println(s"${req.method} ${req.uri}") *> routes(req).value))
+
   def run: IO[Unit] =
     EmberClientBuilder.default[IO].build.use: client =>
-      ExcelServer
-        .server(excel, extraRoutes = invokeRoutes(client))
-        .use: srv =>
-          IO.println(s"Server running at http://${srv.address}") *> IO.never
+      (Resource.eval(ExcelRoutes.routes(excel)).flatMap: addinRoutes =>
+        EmberServerBuilder
+          .default[IO]
+          .withHost(host"0.0.0.0")
+          .withPort(port"7777")
+          .withHttpApp((logged(addinRoutes) <+> logged(invokeRoutes(client))).orNotFound)
+          .build).use: srv =>
+        IO.println(s"Server running at http://${srv.address}") *> IO.never
