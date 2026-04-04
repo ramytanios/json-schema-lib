@@ -65,6 +65,7 @@ lazy val excel =
         "io.circe"      %% "circe-core"          % V.circe,
         "org.http4s"    %% "http4s-ember-server"  % V.http4s,
         "org.http4s"    %% "http4s-dsl"           % V.http4s,
+        "org.http4s"    %% "http4s-circe"          % V.http4s,
         "org.typelevel" %% "cats-effect"          % V.catsEffect,
         "org.scalameta" %% "munit"                % V.munit % Test
       ),
