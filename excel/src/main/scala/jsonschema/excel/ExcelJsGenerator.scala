@@ -14,13 +14,7 @@ object ExcelJsGenerator:
 
   private def renderFunction(fn: ExcelFunctionDef): String =
     val paramNames = fn.parameters.map(_.name).mkString(", ")
-    val maxKeyLen = fn.parameters.map(_.name.length).maxOption.getOrElse(0)
-    val paramLines = fn.parameters
-      .map { p =>
-        val pad = " " * (maxKeyLen - p.name.length)
-        s"        ${p.name}$pad: ${p.name},"
-      }
-      .mkString("\n")
+    val paramLines = fn.parameters.map(p => s"${p.name}: ${p.name},").mkString("\n")
     s"""|CustomFunctions.associate(
         |  "${fn.id}",
         |  async function($paramNames) {
