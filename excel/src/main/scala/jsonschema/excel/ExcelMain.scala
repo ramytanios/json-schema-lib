@@ -7,8 +7,11 @@ import io.circe.syntax.*
 import jsonschema.Description
 import jsonschema.JsonSchema
 import org.http4s.HttpRoutes
+import org.http4s.Uri
 import org.http4s.circe.*
+import org.http4s.client.Client
 import org.http4s.dsl.io.*
+import org.http4s.ember.client.EmberClientBuilder
 
 /**
  * Example server for manual HTTP testing.
@@ -22,6 +25,8 @@ import org.http4s.dsl.io.*
  *   - POST http://localhost:7777/invoke          — function dispatcher
  *
  * Example invoke calls:
+ *
+ *   # pure computation
  *   curl -s -X POST http://localhost:7777/invoke \
  *     -H 'Content-Type: application/json' \
  *     -d '{"functionId":"ADD","params":{"x":3,"y":4}}'
@@ -30,9 +35,15 @@ import org.http4s.dsl.io.*
  *     -H 'Content-Type: application/json' \
  *     -d '{"functionId":"REPEAT","params":{"text":"hello","times":3}}'
  *
+ *   # calls jsonplaceholder.typicode.com
  *   curl -s -X POST http://localhost:7777/invoke \
  *     -H 'Content-Type: application/json' \
- *     -d '{"functionId":"REPEAT","params":{"text":"hi","times":2,"sep":" | "}}'
+ *     -d '{"functionId":"FETCH_POST","params":{"id":1}}'
+ *
+ *   # calls api.open-meteo.com (lat/lon for Paris)
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"CURRENT_TEMP","params":{"lat":48.85,"lon":2.35}}'
  */
 object ExcelMain extends IOApp.Simple:
 
@@ -49,6 +60,17 @@ object ExcelMain extends IOApp.Simple:
       @Description("separator between repetitions (default: space)") sep: Option[String]
   ) derives JsonSchema
 
+  /** Fetches a post from https://jsonplaceholder.typicode.com/posts/{id} */
+  case class FetchPost(
+      @Description("post ID between 1 and 100") id: Int
+  ) derives JsonSchema
+
+  /** Fetches the current air temperature at a location from https://open-meteo.com (no API key). */
+  case class CurrentTemp(
+      @Description("latitude  (e.g. 48.85 for Paris, 40.71 for New York)") lat: Double,
+      @Description("longitude (e.g.  2.35 for Paris, -74.0 for New York)") lon: Double
+  ) derives JsonSchema
+
   // ── Excel instance ─────────────────────────────────────────────────────────
 
   private val centralUrl = "http://localhost:7777/invoke"
@@ -56,14 +78,19 @@ object ExcelMain extends IOApp.Simple:
   private val excel = Excel(
     functions = List(
       ExcelFunctionBuilder.from[Add]("ADD", "Add two numbers"),
-      ExcelFunctionBuilder.from[Repeat]("REPEAT", "Repeat a string N times")
+      ExcelFunctionBuilder.from[Repeat]("REPEAT", "Repeat a string N times"),
+      ExcelFunctionBuilder.from[FetchPost]("FETCH_POST", "Fetch the title of a JSONPlaceholder post"),
+      ExcelFunctionBuilder.from[CurrentTemp](
+        "CURRENT_TEMP",
+        "Current temperature (°C) from Open-Meteo"
+      )
     ),
     centralUrl = centralUrl
   )
 
-  // ── Invoke route ───────────────────────────────────────────────────────────
+  // ── Invoke routes ──────────────────────────────────────────────────────────
 
-  private val invokeRoutes: HttpRoutes[IO] =
+  private def invokeRoutes(client: Client[IO]): HttpRoutes[IO] =
     HttpRoutes.of[IO]:
       case req @ POST -> Root / "invoke" =>
         req.as[Json].flatMap: body =>
@@ -77,6 +104,7 @@ object ExcelMain extends IOApp.Simple:
                 y <- params.get[Double]("y")
               yield Ok((x + y).asJson))
                 .fold(e => BadRequest(e.message), identity)
+
             case "REPEAT" =>
               (for
                 text <- params.get[String]("text")
@@ -84,13 +112,50 @@ object ExcelMain extends IOApp.Simple:
                 sep = params.get[String]("sep").toOption.getOrElse(" ")
               yield Ok(List.fill(times)(text).mkString(sep).asJson))
                 .fold(e => BadRequest(e.message), identity)
+
+            case "FETCH_POST" =>
+              params
+                .get[Int]("id")
+                .fold(
+                  e => BadRequest(e.message),
+                  id =>
+                    client
+                      .expect[Json](
+                        Uri.unsafeFromString(s"https://jsonplaceholder.typicode.com/posts/$id")
+                      )
+                      .flatMap: json =>
+                        val title = json.hcursor.get[String]("title").getOrElse("(no title)")
+                        Ok(title.asJson)
+                )
+
+            case "CURRENT_TEMP" =>
+              (for
+                lat <- params.get[Double]("lat")
+                lon <- params.get[Double]("lon")
+              yield
+                val uri = Uri
+                  .unsafeFromString("https://api.open-meteo.com/v1/forecast")
+                  .withQueryParam("latitude", lat)
+                  .withQueryParam("longitude", lon)
+                  .withQueryParam("current_weather", "true")
+                client
+                  .expect[Json](uri)
+                  .flatMap: json =>
+                    val temp = json.hcursor
+                      .downField("current_weather")
+                      .get[Double]("temperature")
+                      .getOrElse(Double.NaN)
+                    Ok(temp.asJson)
+              ).fold(e => BadRequest(e.message), identity)
+
             case other =>
               NotFound(s"unknown function: $other")
 
   // ── Entry point ────────────────────────────────────────────────────────────
 
   def run: IO[Unit] =
-    ExcelServer
-      .server(excel, extraRoutes = invokeRoutes)
-      .use: srv =>
-        IO.println(s"Server running at http://${srv.address}") *> IO.never
+    EmberClientBuilder.default[IO].build.use: client =>
+      ExcelServer
+        .server(excel, extraRoutes = invokeRoutes(client))
+        .use: srv =>
+          IO.println(s"Server running at http://${srv.address}") *> IO.never
