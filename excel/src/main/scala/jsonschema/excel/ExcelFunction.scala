@@ -30,32 +30,39 @@ object ExcelFunction:
         )
       )
 
-  case class Def(id: String, name: String, description: String, parameters: List[Parameter])
+  case class Def(
+      id: String,
+      name: String,
+      description: String,
+      parameters: List[Parameter],
+      category: Option[String] = None
+  )
 
   object Def:
     given Encoder[Def] = Encoder.instance: fn =>
-      Json.fromJsonObject(
-        JsonObject(
-          "id" -> Json.fromString(fn.id),
-          "name" -> Json.fromString(fn.name),
-          "description" -> Json.fromString(fn.description),
-          "parameters" -> Encoder[List[Parameter]].apply(fn.parameters),
-          "result" -> Json.fromJsonObject(
-            JsonObject(
-              "type" -> Json.fromString("any"),
-              "dimensionality" -> Json.fromString("matrix")
-            )
-          ),
-          "options" -> Json.fromJsonObject(
-            JsonObject(
-              "stream" -> Json.fromBoolean(false),
-              "cancelable" -> Json.fromBoolean(false)
-            )
+      val base = JsonObject(
+        "id" -> Json.fromString(fn.id),
+        "name" -> Json.fromString(fn.name),
+        "description" -> Json.fromString(fn.description),
+        "parameters" -> Encoder[List[Parameter]].apply(fn.parameters),
+        "result" -> Json.fromJsonObject(
+          JsonObject(
+            "type" -> Json.fromString("any"),
+            "dimensionality" -> Json.fromString("matrix")
+          )
+        ),
+        "options" -> Json.fromJsonObject(
+          JsonObject(
+            "stream" -> Json.fromBoolean(false),
+            "cancelable" -> Json.fromBoolean(false)
           )
         )
       )
+      Json.fromJsonObject(
+        fn.category.fold(base)(c => base.add("category", Json.fromString(c)))
+      )
 
-  def from[A](id: String)(using js: JsonSchema[A]): Def =
+  def from[A](id: String, category: Option[String] = None)(using js: JsonSchema[A]): Def =
     val cursor = js.schema.toJson.hcursor
     if cursor.get[String]("type").getOrElse("") != "object" then
       throw IllegalArgumentException("ExcelFunction.from requires a case class JsonSchema")
@@ -82,4 +89,4 @@ object ExcelFunction:
           .getOrElse("")
         Parameter(name, desc, paramType, !required(name))
 
-    Def(id, id, description, params)
+    Def(id, id, description, params, category)

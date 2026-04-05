@@ -107,12 +107,12 @@ object ExcelMain extends IOApp.Simple:
 
   private val excel = Excel(
     functions = List(
-      ExcelFunction.from[Add]("ADD"),
-      ExcelFunction.from[Sqrt]("SQRT"),
-      ExcelFunction.from[Repeat]("REPEAT"),
-      ExcelFunction.from[FetchPost]("FETCH_POST"),
-      ExcelFunction.from[FetchPostFull]("FETCH_POST_FULL"),
-      ExcelFunction.from[CurrentTemp]("CURRENT_TEMP")
+      ExcelFunction.from[Add]("ADD", category = Some("MATH")),
+      ExcelFunction.from[Sqrt]("SQRT", category = Some("MATH")),
+      ExcelFunction.from[Repeat]("REPEAT", category = Some("TEXT")),
+      ExcelFunction.from[FetchPost]("FETCH_POST", category = Some("DATA")),
+      ExcelFunction.from[FetchPostFull]("FETCH_POST_FULL", category = Some("DATA")),
+      ExcelFunction.from[CurrentTemp]("CURRENT_TEMP", category = Some("DATA"))
     ),
     centralUrl = "http://localhost:7777/invoke",
     namespace = "EXMAIN"
@@ -133,15 +133,19 @@ object ExcelMain extends IOApp.Simple:
                 x <- params.get[Double]("x")
                 y <- params.get[Double]("y")
               yield Ok((x + y).asJson))
-                .fold(e => BadRequest(e.message), identity)
+                .fold(e => ExcelError.badRequest(e.message), identity)
 
             case "SQRT" =>
               params
                 .get[Double]("x")
                 .fold(
-                  e => BadRequest(e.message),
+                  e => ExcelError.badRequest(e.message),
                   x =>
-                    if x < 0 then BadRequest(s"cannot take the square root of a negative number: $x")
+                    if x < 0 then
+                      ExcelError.unprocessable(
+                        s"cannot take the square root of a negative number: $x",
+                        code = Some("NEGATIVE_INPUT")
+                      )
                     else Ok(Math.sqrt(x).asJson)
                 )
 
@@ -151,17 +155,25 @@ object ExcelMain extends IOApp.Simple:
                 times <- params.get[Int]("times")
                 sep = params.get[String]("sep").toOption.getOrElse(" ")
               yield
-                if times < 0 then BadRequest(s"times must be non-negative, got $times")
+                if times < 0 then
+                  ExcelError.unprocessable(
+                    s"times must be non-negative, got $times",
+                    code = Some("NEGATIVE_TIMES")
+                  )
                 else Ok(List.fill(times)(text).mkString(sep).asJson))
-                .fold(e => BadRequest(e.message), identity)
+                .fold(e => ExcelError.badRequest(e.message), identity)
 
             case "FETCH_POST" =>
               params
                 .get[Int]("id")
                 .fold(
-                  e => BadRequest(e.message),
+                  e => ExcelError.badRequest(e.message),
                   id =>
-                    if id < 1 || id > 100 then BadRequest(s"id must be between 1 and 100, got $id")
+                    if id < 1 || id > 100 then
+                      ExcelError.unprocessable(
+                        s"id must be between 1 and 100, got $id",
+                        code = Some("ID_OUT_OF_RANGE")
+                      )
                     else
                       client
                         .expect[Json](
@@ -176,9 +188,13 @@ object ExcelMain extends IOApp.Simple:
               params
                 .get[Int]("id")
                 .fold(
-                  e => BadRequest(e.message),
+                  e => ExcelError.badRequest(e.message),
                   id =>
-                    if id < 1 || id > 100 then BadRequest(s"id must be between 1 and 100, got $id")
+                    if id < 1 || id > 100 then
+                      ExcelError.unprocessable(
+                        s"id must be between 1 and 100, got $id",
+                        code = Some("ID_OUT_OF_RANGE")
+                      )
                     else
                       client
                         .expect[Json](
@@ -203,10 +219,10 @@ object ExcelMain extends IOApp.Simple:
                     Ok(json.hcursor.downField(
                       "current_weather"
                     ).get[Double]("temperature").getOrElse(Double.NaN).asJson)
-              ).fold(e => BadRequest(e.message), identity)
+              ).fold(e => ExcelError.badRequest(e.message), identity)
 
             case other =>
-              NotFound(s"unknown function: $other")
+              ExcelError.badRequest(s"unknown function: $other", code = Some("UNKNOWN_FUNCTION"))
 
   // ── Entry point ────────────────────────────────────────────────────────────
 

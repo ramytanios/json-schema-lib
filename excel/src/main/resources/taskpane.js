@@ -23,7 +23,33 @@ function card(f) {
 function render(list) {
   const el = document.getElementById("list");
   el.innerHTML = "";
-  list.forEach(f => el.appendChild(card(f)));
+
+  // Group by category; functions with no category go under ""
+  const groups = {};
+  list.forEach(f => {
+    const cat = f.category || "";
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(f);
+  });
+
+  // Named categories alphabetically first, uncategorized last
+  const cats = Object.keys(groups).sort((a, b) => {
+    if (!a) return 1;
+    if (!b) return -1;
+    return a.localeCompare(b);
+  });
+
+  const hasCategories = cats.some(c => c !== "");
+  cats.forEach(cat => {
+    if (hasCategories && cat) {
+      const header = document.createElement("div");
+      header.className = "cat-header";
+      header.textContent = cat;
+      el.appendChild(header);
+    }
+    groups[cat].forEach(f => el.appendChild(card(f)));
+  });
+
   document.getElementById("empty").style.display = list.length ? "none" : "block";
   document.getElementById("count").textContent =
     list.length + " function" + (list.length === 1 ? "" : "s");
@@ -32,7 +58,10 @@ function render(list) {
 function doFilter() {
   const q = document.getElementById("q").value.toLowerCase();
   render(q
-    ? fns.filter(f => f.name.toLowerCase().includes(q) || f.description.toLowerCase().includes(q))
+    ? fns.filter(f =>
+        f.name.toLowerCase().includes(q) ||
+        f.description.toLowerCase().includes(q) ||
+        (f.category || "").toLowerCase().includes(q))
     : fns);
 }
 

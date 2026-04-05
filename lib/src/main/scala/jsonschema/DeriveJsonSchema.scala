@@ -166,6 +166,16 @@ object DeriveJsonSchema:
             )
           }
 
+        case '[BigDecimal] =>
+          '{
+            Schema.NumberSchema(
+              minimum = ${ Expr(minimum) },
+              maximum = ${ Expr(maximum) },
+              exclusiveMinimum = ${ Expr(exclusiveMinimum) },
+              exclusiveMaximum = ${ Expr(exclusiveMaximum) }
+            )
+          }
+
         case '[Boolean] =>
           '{ Schema.BooleanSchema() }
 

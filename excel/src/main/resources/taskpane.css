@@ -40,6 +40,17 @@ body {
   border-bottom: 1px solid #edebe9;
 }
 
+.cat-header {
+  padding: 6px 14px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #217346;
+  border-bottom: 1px solid #185c37;
+}
+
 .fn-card {
   padding: 10px 14px;
   border-bottom: 1px solid #edebe9;

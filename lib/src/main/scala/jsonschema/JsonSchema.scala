@@ -47,6 +47,11 @@ object JsonSchema:
   given JsonSchema[Float] = instance(Schema.NumberSchema())
 
   /**
+   * Given instance for BigDecimal.
+   */
+  given JsonSchema[BigDecimal] = instance(Schema.NumberSchema())
+
+  /**
    * Given instance for Boolean
    */
   given JsonSchema[Boolean] = instance(Schema.BooleanSchema())

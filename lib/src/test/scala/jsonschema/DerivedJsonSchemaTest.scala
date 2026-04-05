@@ -149,6 +149,48 @@ class DerivedJsonSchemaTest extends FunSuite:
 
     assertEquals(json, expected)
 
+  test("Derive schema for BigDecimal field"):
+    case class Price(amount: BigDecimal)
+
+    object Price:
+      given JsonSchema[Price] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Price].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "amount": {"type": "number"}
+      },
+      "required": ["amount"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
+  test("Derive schema for BigDecimal field with constraints"):
+    case class Strike(@Minimum(0.0) @ExclusiveMinimum(0.0) value: BigDecimal)
+
+    object Strike:
+      given JsonSchema[Strike] = DeriveJsonSchema.derived
+
+    val schema = JsonSchema[Strike].schema
+    val json = schema.toJson
+
+    val expected = parse("""{
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number",
+          "minimum": 0.0,
+          "exclusiveMinimum": 0.0
+        }
+      },
+      "required": ["value"]
+    }""").getOrElse(io.circe.Json.Null)
+
+    assertEquals(json, expected)
+
   test("Derive schema with multiple constraints on different fields"):
     case class User(
         @MinLength(3) @MaxLength(50) name: String,
