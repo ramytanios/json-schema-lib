@@ -92,3 +92,46 @@ val json = JsonSchema[Profile].schema
 Nested case classes are inlined (no `$ref`) and work to arbitrary depth.
 
 > **Limitation:** Mutually recursive case classes (e.g. `A` contains `B`, `B` contains `A`) will cause a compile-time stack overflow. Workaround: provide an explicit `given JsonSchema[B]` before deriving `A`.
+
+## Excel
+
+An optional module (`excel`) exposes Scala functions as Excel custom functions via an HTTP server.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Excel                                                                      │
+│                                                                             │
+│  ┌──────────────────────┐            ┌──────────────────────────────────┐   │
+│  │   Functions runtime  │            │           Task pane              │   │
+│  │   (functions.html)   │            │         (taskpane.html)          │   │
+│  │                      │            │                                  │   │
+│  │  on startup          │            │  on load / "Reload Functions"    │   │
+│  │  ┌────────────────┐  │            │  ┌────────────────────────────┐  │   │
+│  │  │loadAndRegister │──┼────────────┼─▶│  GET /functions.json       │  │   │
+│  │  └────────────────┘  │            │  └────────────────────────────┘  │   │
+│  │                      │            │       │ re-render list           │   │
+│  │  poll every 2 s      │            │       ▼                          │   │
+│  │  ┌────────────────┐  │  signal    │  OfficeRuntime.storage           │   │
+│  │  │OfficeRuntime   │◀─┼────────────┼─  .setItem("cf-reload-signal")   │   │
+│  │  │.storage.getItem│  │            │                                  │   │
+│  │  └───────┬────────┘  │            └──────────────────────────────────┘   │
+│  │          │ detected  │                                                   │
+│  │          ▼           │                                                   │
+│  │  ┌────────────────┐  │                                                   │
+│  │  │loadAndRegister │  │  (only new IDs — tracked in registeredIds Set)    │
+│  │  │  (additive)    │  │                                                   │
+│  │  └───────┬────────┘  │                                                   │
+│  │          │           │                                                   │
+│  └──────────┼───────────┘                                                   │
+└─────────────┼───────────────────────────────────────────────────────────────┘
+              │ POST /invoke  {functionId, params}
+              ▼
+     ┌─────────────────┐
+     │   Scala server  │
+     │  (http4s/ember) │
+     └─────────────────┘
+```
+
+- **`/functions.json`** — served at startup from the in-memory function list; always reflects the running server's functions.
+- **`/functions.js`** — fetches `/functions.json` at runtime and calls `CustomFunctions.associate()` dynamically; polls `OfficeRuntime.storage` every 2 s for a reload signal.
+- **Reload without add-in restart** — clicking "Reload Functions" signals the runtime to re-register new functions and refreshes the taskpane list. Formula-bar autocomplete for brand-new functions still requires a full add-in reload (Excel limitation).
