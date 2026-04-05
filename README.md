@@ -12,6 +12,7 @@ Add to your `build.sbt`:
 
 ```scala
 libraryDependencies += "io.github.ramytanios" %% "json-schema-lib" % "<version>"
+libraryDependencies += "io.github.ramytanios" %% "json-schema-lib-excel" % "<version>"
 ```
 
 
