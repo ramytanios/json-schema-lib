@@ -27,4 +27,4 @@ class Excel(functions: List[ExcelFunction.Def], centralUrl: String, namespace: S
 
   def taskpaneJs(): String = ExcelHtml.taskpaneJs
 
-  val iconSvg: String = ExcelHtml.iconSvg
+  def iconPng(size: Int): Array[Byte] = ExcelHtml.iconPng(size)

@@ -30,9 +30,6 @@ Sideloading instructions:
   <DisplayName DefaultValue="ExcelMain Tst"/>
   <Description DefaultValue="Custom functions served by local ExcelMain server"/>
 
-  <IconUrl DefaultValue="http://localhost:7777/icon.svg"/>
-  <HighResolutionIconUrl DefaultValue="http://localhost:7777/icon.svg"/>
-
   <Hosts>
     <Host Name="Workbook"/>
   </Hosts>
@@ -73,7 +70,7 @@ Sideloading instructions:
           </ExtensionPoint>
         </AllFormFactors>
 
-        <!-- Ribbon button (desktop only) — note: singular DesktopFormFactor -->
+        <!-- Ribbon button (desktop only) -->
         <DesktopFormFactor>
           <FunctionFile resid="FunctionsUrl"/>
           <ExtensionPoint xsi:type="PrimaryCommandSurface">
@@ -111,9 +108,9 @@ Sideloading instructions:
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon16" DefaultValue="http://localhost:7777/icon.svg"/>
-        <bt:Image id="Icon32" DefaultValue="http://localhost:7777/icon.svg"/>
-        <bt:Image id="Icon80" DefaultValue="http://localhost:7777/icon.svg"/>
+        <bt:Image id="Icon16" DefaultValue="http://localhost:7777/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="http://localhost:7777/icon-32.png"/>
+        <bt:Image id="Icon80" DefaultValue="http://localhost:7777/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="HtmlUrl"      DefaultValue="http://localhost:7777/functions.html"/>

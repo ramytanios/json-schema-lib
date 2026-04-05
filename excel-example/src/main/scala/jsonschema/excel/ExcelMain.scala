@@ -29,10 +29,36 @@ import org.http4s.ember.server.EmberServerBuilder
  *     -H 'Content-Type: application/json' \
  *     -d '{"functionId":"ADD","params":{"x":3,"y":4}}'
  *
- *   # calls jsonplaceholder.typicode.com
+ *   # square root — succeeds
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"SQRT","params":{"x":9}}'
+ *
+ *   # square root — returns 400 with a message; Excel shows it in the error card
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"SQRT","params":{"x":-4}}'
+ *
+ *   # repeat — returns 400 for negative times
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"REPEAT","params":{"text":"hi","times":-1}}'
+ *
+ *   # calls jsonplaceholder.typicode.com — returns a string
  *   curl -s -X POST http://localhost:7777/invoke \
  *     -H 'Content-Type: application/json' \
  *     -d '{"functionId":"FETCH_POST","params":{"id":1}}'
+ *
+ *   # calls jsonplaceholder.typicode.com — returns 400 for id out of range
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"FETCH_POST","params":{"id":999}}'
+ *
+ *   # calls jsonplaceholder.typicode.com — returns the full post object;
+ *   # Excel renders it as a spilled key/value table (userId | id | title | body)
+ *   curl -s -X POST http://localhost:7777/invoke \
+ *     -H 'Content-Type: application/json' \
+ *     -d '{"functionId":"FETCH_POST_FULL","params":{"id":1}}'
  *
  *   # calls api.open-meteo.com (lat/lon for Paris)
  *   curl -s -X POST http://localhost:7777/invoke \
@@ -56,8 +82,18 @@ object ExcelMain extends IOApp.Simple:
       @Description("separator between repetitions (default: space)") sep: Option[String]
   ) derives JsonSchema
 
+  @Description("Square root of a non-negative number")
+  case class Sqrt(
+      @Description("non-negative number") x: Double
+  ) derives JsonSchema
+
   @Description("Fetch the title of a JSONPlaceholder post")
   case class FetchPost(
+      @Description("post ID between 1 and 100") id: Int
+  ) derives JsonSchema
+
+  @Description("Fetch a full JSONPlaceholder post as a key/value table")
+  case class FetchPostFull(
       @Description("post ID between 1 and 100") id: Int
   ) derives JsonSchema
 
@@ -72,8 +108,10 @@ object ExcelMain extends IOApp.Simple:
   private val excel = Excel(
     functions = List(
       ExcelFunction.from[Add]("ADD"),
+      ExcelFunction.from[Sqrt]("SQRT"),
       ExcelFunction.from[Repeat]("REPEAT"),
       ExcelFunction.from[FetchPost]("FETCH_POST"),
+      ExcelFunction.from[FetchPostFull]("FETCH_POST_FULL"),
       ExcelFunction.from[CurrentTemp]("CURRENT_TEMP")
     ),
     centralUrl = "http://localhost:7777/invoke",
@@ -97,12 +135,24 @@ object ExcelMain extends IOApp.Simple:
               yield Ok((x + y).asJson))
                 .fold(e => BadRequest(e.message), identity)
 
+            case "SQRT" =>
+              params
+                .get[Double]("x")
+                .fold(
+                  e => BadRequest(e.message),
+                  x =>
+                    if x < 0 then BadRequest(s"cannot take the square root of a negative number: $x")
+                    else Ok(Math.sqrt(x).asJson)
+                )
+
             case "REPEAT" =>
               (for
                 text <- params.get[String]("text")
                 times <- params.get[Int]("times")
                 sep = params.get[String]("sep").toOption.getOrElse(" ")
-              yield Ok(List.fill(times)(text).mkString(sep).asJson))
+              yield
+                if times < 0 then BadRequest(s"times must be non-negative, got $times")
+                else Ok(List.fill(times)(text).mkString(sep).asJson))
                 .fold(e => BadRequest(e.message), identity)
 
             case "FETCH_POST" =>
@@ -111,12 +161,30 @@ object ExcelMain extends IOApp.Simple:
                 .fold(
                   e => BadRequest(e.message),
                   id =>
-                    client
-                      .expect[Json](
-                        Uri.unsafeFromString(s"https://jsonplaceholder.typicode.com/posts/$id")
-                      )
-                      .flatMap: json =>
-                        Ok(json.hcursor.get[String]("title").getOrElse("(no title)").asJson)
+                    if id < 1 || id > 100 then BadRequest(s"id must be between 1 and 100, got $id")
+                    else
+                      client
+                        .expect[Json](
+                          Uri.unsafeFromString(s"https://jsonplaceholder.typicode.com/posts/$id")
+                        )
+                        .flatMap: json =>
+                          Ok(json.hcursor.get[String]("title").getOrElse("(no title)").asJson)
+                )
+
+            // Returns the full post object — Excel spills it as a key/value table
+            case "FETCH_POST_FULL" =>
+              params
+                .get[Int]("id")
+                .fold(
+                  e => BadRequest(e.message),
+                  id =>
+                    if id < 1 || id > 100 then BadRequest(s"id must be between 1 and 100, got $id")
+                    else
+                      client
+                        .expect[Json](
+                          Uri.unsafeFromString(s"https://jsonplaceholder.typicode.com/posts/$id")
+                        )
+                        .flatMap(Ok(_))
                 )
 
             case "CURRENT_TEMP" =>

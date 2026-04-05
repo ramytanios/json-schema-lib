@@ -40,7 +40,12 @@ object ExcelFunction:
           "name" -> Json.fromString(fn.name),
           "description" -> Json.fromString(fn.description),
           "parameters" -> Encoder[List[Parameter]].apply(fn.parameters),
-          "result" -> Json.fromJsonObject(JsonObject("type" -> Json.fromString("any"))),
+          "result" -> Json.fromJsonObject(
+            JsonObject(
+              "type" -> Json.fromString("any"),
+              "dimensionality" -> Json.fromString("matrix")
+            )
+          ),
           "options" -> Json.fromJsonObject(
             JsonObject(
               "stream" -> Json.fromBoolean(false),

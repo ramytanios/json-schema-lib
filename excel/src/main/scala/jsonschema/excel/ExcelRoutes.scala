@@ -17,6 +17,9 @@ object ExcelRoutes:
       taskpane <- IO.pure(excel.taskpaneHtml())
       css <- IO.pure(excel.taskpaneCss())
       taskpaneJs <- IO.pure(excel.taskpaneJs())
+      icon16 <- IO.blocking(excel.iconPng(16))
+      icon32 <- IO.blocking(excel.iconPng(32))
+      icon80 <- IO.blocking(excel.iconPng(80))
     yield HttpRoutes.of[IO]:
       case GET -> Root / "functions.js" =>
         Ok(js).map(_.withContentType(`Content-Type`(MediaType.text.javascript)))
@@ -30,5 +33,9 @@ object ExcelRoutes:
         Ok(css).map(_.withContentType(`Content-Type`(MediaType.text.css)))
       case GET -> Root / "taskpane.js" =>
         Ok(taskpaneJs).map(_.withContentType(`Content-Type`(MediaType.text.javascript)))
-      case GET -> Root / "icon.svg" =>
-        Ok(excel.iconSvg).map(_.withContentType(`Content-Type`(MediaType.image.`svg+xml`)))
+      case GET -> Root / "icon-16.png" =>
+        Ok(icon16).map(_.withContentType(`Content-Type`(MediaType.image.png)))
+      case GET -> Root / "icon-32.png" =>
+        Ok(icon32).map(_.withContentType(`Content-Type`(MediaType.image.png)))
+      case GET -> Root / "icon-80.png" =>
+        Ok(icon80).map(_.withContentType(`Content-Type`(MediaType.image.png)))
