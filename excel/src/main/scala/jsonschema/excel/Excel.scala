@@ -15,7 +15,7 @@ import io.circe.Json
  */
 class Excel(functions: List[ExcelFunction.Def], centralUrl: String, namespace: String = ""):
 
-  def functionsJs(): String = ExcelJsGenerator.generate(functions, centralUrl, true)
+  def functionsJs(): String = ExcelJsGenerator.generate(centralUrl, true)
 
   def functionsJson(): Json = ExcelFunctionsManifest(functions).toJson
 
@@ -23,4 +23,8 @@ class Excel(functions: List[ExcelFunction.Def], centralUrl: String, namespace: S
 
   def taskpaneHtml(): String = ExcelHtml.taskpaneHtml(namespace)
 
-  def iconPng(size: Int): Array[Byte] = ExcelIcon.png(size)
+  def taskpaneCss(): String = ExcelHtml.taskpaneCss
+
+  def taskpaneJs(): String = ExcelHtml.taskpaneJs
+
+  val iconSvg: String = ExcelHtml.iconSvg

@@ -14,32 +14,19 @@ object ExcelJsGenerator:
       conn.setReadTimeout(10_000)
       scala.io.Source.fromInputStream(conn.getInputStream).mkString
 
-  private def renderFunction(fn: ExcelFunction.Def): String =
-    val paramNames = fn.parameters.map(_.name).mkString(", ")
-    val paramLines = fn.parameters.map(p => s"${p.name}: ${p.name},").mkString("\n")
-    s"""|CustomFunctions.associate(
-        |  "${fn.id}",
-        |  async function($paramNames) {
-        |    const response = await axios.post(CENTRAL_URL, {
-        |      functionId: "${fn.id}",
-        |      params: {
-        |         $paramLines
-        |      },
-        |    });
-        |    return response.data;
-        |  }
-        |);""".stripMargin
+  private def functionsCore(): String =
+    scala.io.Source.fromInputStream(
+      getClass.getResourceAsStream("/functions-core.js")
+    ).mkString
 
   def generate(
-      functions: List[ExcelFunction.Def],
       centralUrl: String,
       selfContained: Boolean = false
   ): String =
-    val bodies = functions.map(renderFunction).mkString("\n\n")
     val core =
       s"""|const CENTRAL_URL = "$centralUrl";
           |
-          |$bodies
+          |${functionsCore()}
           |""".stripMargin
     if selfContained then s"${Axios.jsSource()}\n\n$core"
     else core

@@ -1,0 +1,84 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-size: 13px;
+  color: #323130;
+  background: #fff;
+}
+
+#header {
+  background: #217346;
+  color: #fff;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#search-box {
+  padding: 8px 10px;
+  border-bottom: 1px solid #edebe9;
+}
+
+#search-box input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #c8c6c4;
+  border-radius: 2px;
+  font-size: 13px;
+  outline: none;
+}
+
+#search-box input:focus { border-color: #217346; }
+
+#count {
+  padding: 4px 14px;
+  font-size: 11px;
+  color: #a19f9d;
+  background: #faf9f8;
+  border-bottom: 1px solid #edebe9;
+}
+
+.fn-card {
+  padding: 10px 14px;
+  border-bottom: 1px solid #edebe9;
+}
+
+.fn-card:hover { background: #f3f2f1; }
+
+.fn-sig {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  color: #217346;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.fn-desc { color: #605e5c; margin: 3px 0 5px; font-size: 12px; }
+
+.params { list-style: none; padding: 0; margin: 0; }
+
+.params li { font-size: 11px; color: #605e5c; padding: 1px 0; }
+
+.pname { font-family: monospace; font-weight: 600; color: #323130; }
+
+.popt { color: #a19f9d; font-style: italic; }
+
+#empty { padding: 20px; text-align: center; color: #a19f9d; display: none; }
+
+#reload-btn {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 8px 10px;
+  padding: 6px 12px;
+  background: #217346;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#reload-btn:hover { background: #185c37; }
+
+#reload-btn:disabled { background: #a19f9d; cursor: default; }

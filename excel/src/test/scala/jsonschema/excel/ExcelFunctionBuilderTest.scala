@@ -112,34 +112,31 @@ class ExcelFunctionBuilderTest extends FunSuite:
   // ── JS generator tests ─────────────────────────────────────────────────────
 
   test("ExcelJsGenerator.generate output contains const CENTRAL_URL header"):
-    val js = ExcelJsGenerator.generate(Nil, "https://example.com/route")
+    val js = ExcelJsGenerator.generate("https://example.com/route")
     assert(js.contains("""const CENTRAL_URL = "https://example.com/route";"""))
 
-  test("generated JS uses axios.post and returns response.data"):
-    @Description("req2 desc")
-    case class Req2(ticker: String) derives JsonSchema
-    val fn = ExcelFunction.from[Req2]("MY.FUNC")
-    val js = ExcelJsGenerator.generate(List(fn), "https://example.com")
-    assert(js.contains("CustomFunctions.associate("))
-    assert(js.contains(""""MY.FUNC""""))
-    assert(js.contains("async function(ticker)"))
+  test("generated JS dynamically fetches functions.json and uses CustomFunctions.associate"):
+    val js = ExcelJsGenerator.generate("https://example.com")
+    assert(js.contains("fetch(\"/functions.json\")"))
+    assert(js.contains("CustomFunctions.associate(fn.id"))
     assert(js.contains("axios.post(CENTRAL_URL"))
-    assert(js.contains("return response.data"))
+    assert(js.contains("resp.data"))
 
-  test("request body shape: { functionId: ..., params: { field: field } }"):
-    @Description("req3 desc")
-    case class Req3(ticker: String, amount: Double) derives JsonSchema
-    val fn = ExcelFunction.from[Req3]("MY.FUNC2")
-    val js = ExcelJsGenerator.generate(List(fn), "https://example.com")
-    assert(js.contains("""functionId: "MY.FUNC2""""))
-    assert(js.contains("ticker: ticker,"))
-    assert(js.contains("amount: amount,"))
+  test("generated JS maps parameter names from function metadata"):
+    val js = ExcelJsGenerator.generate("https://example.com")
+    assert(js.contains("params[p.name] = args[i]"))
+    assert(js.contains("fn.parameters.forEach"))
+
+  test("generated JS polls OfficeRuntime.storage for reload signal"):
+    val js = ExcelJsGenerator.generate("https://example.com")
+    assert(js.contains("OfficeRuntime.storage.getItem(\"cf-reload-signal\")"))
+    assert(js.contains("loadAndRegister()"))
 
   test("selfContained = false does not include axios source inline"):
-    val js = ExcelJsGenerator.generate(Nil, "https://example.com", selfContained = false)
+    val js = ExcelJsGenerator.generate("https://example.com", selfContained = false)
     assert(!js.contains("axios/lib") && !js.contains("var axios"))
 
-  test("full round-trip: two functions, both CustomFunctions.associate calls present"):
+  test("full round-trip: JS contains CENTRAL_URL and dynamic registration"):
     @Description("Gets price")
     case class PricingRequest(ticker: String, date: Option[String]) derives JsonSchema
     @Description("Computes VaR")
@@ -150,8 +147,8 @@ class ExcelFunctionBuilderTest extends FunSuite:
     )
     val excel = new Excel(fns, "https://central-api.example.com/route")
     val js = excel.`functionsJs`()
-    assert(js.contains(""""PRICING.GET_PRICE""""))
-    assert(js.contains(""""RISK.COMPUTE_VAR""""))
+    assert(js.contains("""const CENTRAL_URL = "https://central-api.example.com/route";"""))
+    assert(js.contains("loadAndRegister()"))
     val manifestJson = excel.functionsJson()
     assertEquals(
       manifestJson.hcursor.downField("functions").as[List[io.circe.Json]].map(_.size),
