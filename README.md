@@ -119,8 +119,8 @@ An optional module (`excel`) exposes Scala functions as Excel custom functions v
 │  │          │ detected  │                                                   │
 │  │          ▼           │                                                   │
 │  │  ┌────────────────┐  │                                                   │
-│  │  │loadAndRegister │  │  (only new IDs — tracked in registeredIds Set)    │
-│  │  │  (additive)    │  │                                                   │
+│  │  │loadAndRegister │  │  (all IDs re-associated on every reload)          │
+│  │  │  (full reload) │  │                                                   │
 │  │  └───────┬────────┘  │                                                   │
 │  │          │           │                                                   │
 │  └──────────┼───────────┘                                                   │
@@ -135,4 +135,4 @@ An optional module (`excel`) exposes Scala functions as Excel custom functions v
 
 - **`/functions.json`** — served at startup from the in-memory function list; always reflects the running server's functions.
 - **`/functions.js`** — fetches `/functions.json` at runtime and calls `CustomFunctions.associate()` dynamically; polls `OfficeRuntime.storage` every 2 s for a reload signal.
-- **Reload without add-in restart** — clicking "Reload Functions" signals the runtime to re-register new functions and refreshes the taskpane list. Formula-bar autocomplete for brand-new functions still requires a full add-in reload (Excel limitation).
+- **Reload without add-in restart** — clicking "Reload Functions" signals the runtime to re-associate all functions from scratch and refreshes the taskpane list. Formula-bar autocomplete for brand-new functions still requires a full add-in reload (Excel limitation).

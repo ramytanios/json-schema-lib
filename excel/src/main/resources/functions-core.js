@@ -1,5 +1,3 @@
-let registeredIds = new Set();
-
 function toExcelCell(value) {
   if (value === null || value === undefined) return "";
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
@@ -25,8 +23,6 @@ function toExcelGrid(value) {
 async function loadAndRegister() {
   const data = await fetch("/functions.json").then(r => r.json());
   for (const fn of (data.functions ?? [])) {
-    if (registeredIds.has(fn.id)) continue;
-    registeredIds.add(fn.id);
     CustomFunctions.associate(fn.id, async function(...args) {
       try {
         const params = {};
